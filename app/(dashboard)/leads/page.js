@@ -64,7 +64,7 @@ export default function LeadsPage() {
             setFormError("");
             setSheetOpen(true);
           }}
-          className="flex h-11 w-full items-center justify-center gap-2 rounded-pill bg-primary text-sm font-medium text-on-primary transition active:scale-[0.99]"
+          className="btn-gradient flex h-11 w-full items-center justify-center gap-2 rounded-pill text-sm font-medium transition active:scale-[0.99]"
         >
           <Plus className="h-4 w-4" aria-hidden="true" />
           Add lead

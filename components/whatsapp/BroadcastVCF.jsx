@@ -65,7 +65,7 @@ export default function BroadcastVCF({ gymName }) {
         type="button"
         onClick={handleExport}
         disabled={loading}
-        className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-pill bg-primary text-sm font-medium text-on-primary transition active:scale-[0.99] disabled:opacity-60"
+        className="btn-gradient mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-pill text-sm font-medium transition active:scale-[0.99] disabled:opacity-60"
       >
         {loading ? (
           <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />

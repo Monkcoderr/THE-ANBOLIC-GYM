@@ -37,7 +37,7 @@ export function ErrorState({ message = "Something went wrong.", onRetry }) {
         <button
           type="button"
           onClick={onRetry}
-          className="mt-5 inline-flex h-10 items-center gap-2 rounded-pill bg-primary px-4 text-sm font-medium text-on-primary transition active:scale-[0.99]"
+          className="btn-gradient mt-5 inline-flex h-10 items-center gap-2 rounded-pill px-4 text-sm font-medium transition active:scale-[0.99]"
         >
           <RotateCw className="h-4 w-4" aria-hidden="true" />
           Try again

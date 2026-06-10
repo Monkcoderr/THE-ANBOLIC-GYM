@@ -94,7 +94,7 @@ export default function RenewalModal({ member, gymName, onSuccess, onClose }) {
           <button
             type="button"
             onClick={finish}
-            className="h-12 w-full rounded-pill bg-primary text-base font-medium text-on-primary transition active:scale-[0.99]"
+            className="btn-gradient h-12 w-full rounded-pill text-base font-medium transition active:scale-[0.99]"
           >
             Done
           </button>
@@ -195,7 +195,7 @@ export default function RenewalModal({ member, gymName, onSuccess, onClose }) {
             type="button"
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-pill bg-primary text-base font-medium text-on-primary transition active:scale-[0.99] disabled:opacity-60"
+            className="btn-gradient flex h-12 w-full items-center justify-center gap-2 rounded-pill text-base font-medium transition active:scale-[0.99] disabled:opacity-60"
           >
             {isSubmitting && (
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />

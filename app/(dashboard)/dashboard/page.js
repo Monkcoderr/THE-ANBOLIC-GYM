@@ -136,19 +136,21 @@ export default function DashboardPage() {
                   onClick={() => setTab(t.key)}
                   className={`flex items-center justify-center gap-1.5 rounded-md px-2 py-2 text-xs font-medium tracking-[-0.28px] transition ${
                     isActive
-                      ? "bg-primary text-on-primary shadow-[var(--shadow-subtle)]"
+                      ? "btn-gradient shadow-[var(--shadow-subtle)]"
                       : "text-body active:bg-canvas"
                   }`}
                 >
                   <span
-                    className={`h-1.5 w-1.5 shrink-0 rounded-full ${t.dot}`}
+                    className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                      isActive ? "bg-white" : t.dot
+                    }`}
                     aria-hidden="true"
                   />
                   <span className="truncate">{t.label}</span>
                   <span
                     className={`ml-0.5 inline-flex min-w-[1.25rem] items-center justify-center rounded-full px-1 text-[11px] font-semibold tabular-nums ${
                       isActive
-                        ? "bg-on-primary/20 text-on-primary"
+                        ? "bg-white/20 text-white"
                         : "bg-canvas text-ink"
                     }`}
                   >
@@ -172,7 +174,7 @@ export default function DashboardPage() {
             action={
               <Link
                 href="/members/new"
-                className="inline-flex h-10 items-center gap-2 rounded-pill bg-primary px-4 text-sm font-medium text-on-primary"
+                className="btn-gradient inline-flex h-10 items-center gap-2 rounded-pill px-4 text-sm font-medium"
               >
                 <Plus className="h-4 w-4" aria-hidden="true" />
                 Add member
@@ -198,7 +200,7 @@ export default function DashboardPage() {
       <Link
         href="/members/new"
         aria-label="Add member"
-        className="fixed bottom-20 right-4 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-on-primary shadow-[var(--shadow-float)] transition active:scale-95"
+        className="btn-gradient fixed bottom-20 right-4 z-20 flex h-14 w-14 items-center justify-center rounded-full shadow-[var(--shadow-float)] transition active:scale-95"
       >
         <Plus className="h-6 w-6" aria-hidden="true" />
       </Link>

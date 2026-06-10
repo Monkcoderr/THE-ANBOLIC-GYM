@@ -70,7 +70,7 @@ export default function MemberCard({ member, onRenew, gymName, href }) {
               e.stopPropagation();
               onRenew?.(member);
             }}
-            className="inline-flex h-9 items-center gap-1.5 rounded-pill bg-primary px-3 text-sm font-medium text-on-primary transition active:scale-[0.98]"
+            className="btn-gradient inline-flex h-9 items-center gap-1.5 rounded-pill px-3 text-sm font-medium transition active:scale-[0.98]"
           >
             <RefreshCw className="h-4 w-4" aria-hidden="true" />
             Renew

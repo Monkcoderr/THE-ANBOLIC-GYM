@@ -185,9 +185,9 @@ body {
 .btn-gradient {
   background-image: linear-gradient(
     to right,
-    #ff512f 0%,
-    #f09819 51%,
-    #ff512f 100%
+    #EB3349 0%,
+    #F45C43 51%,
+    #EB3349 100%
   );
   background-size: 200% auto;
   color: #ffffff;
