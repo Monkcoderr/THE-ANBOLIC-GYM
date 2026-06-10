@@ -23,7 +23,7 @@ export default function MIAAlert({ count = 0, onPress }) {
           {count} member{count === 1 ? "" : "s"} missing 7+ days
         </p>
         <p className="text-xs text-error-deep/80">
-          Tap to reach out before they churn.
+          Tap to reach out before they leave.
         </p>
       </div>
       <ChevronRight className="h-5 w-5 shrink-0 text-error-deep" aria-hidden="true" />

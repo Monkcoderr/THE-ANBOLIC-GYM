@@ -79,7 +79,7 @@ export default function MemberCard({ member, onRenew, gymName, href }) {
         <WhatsAppButton
           phone={member.phone}
           message={reminder}
-          label="Nudge"
+          label="Info"
           variant="outline"
         />
         {href && (

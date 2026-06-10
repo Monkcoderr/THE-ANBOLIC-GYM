@@ -30,7 +30,7 @@ const SOURCE_LABELS = {
 };
 
 /**
- * LeadCard — a single lead with convert / nudge / delete actions.
+ * LeadCard — a single lead with convert / info / delete actions.
  * Props: { lead, gymName, onDelete }
  */
 export default function LeadCard({ lead, gymName, onDelete }) {

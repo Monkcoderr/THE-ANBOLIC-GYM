@@ -1,7 +1,7 @@
 {
   "name": "Gym Manager Pro",
   "short_name": "GymMgr",
-  "description": "Manage gym members, renewals, leads and WhatsApp nudges from your pocket.",
+  "description": "Manage gym members, renewals, leads and WhatsApp info from your pocket.",
   "start_url": "/dashboard",
   "scope": "/",
   "display": "standalone",

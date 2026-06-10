@@ -18,7 +18,7 @@ const geistMono = JetBrains_Mono({
 export const metadata = {
   title: "Gym Manager Pro",
   description:
-    "The paper-register killer. Manage members, renewals, leads, and WhatsApp nudges from your pocket.",
+    "The paper-register killer. Manage members, renewals, leads, and WhatsApp info from your pocket.",
   manifest: "/manifest.json",
   applicationName: "Gym Manager Pro",
   appleWebApp: {
