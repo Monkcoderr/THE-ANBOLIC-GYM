@@ -5,7 +5,7 @@ import { Phone, RefreshCw, AlertOctagon, ChevronRight } from "lucide-react";
 import StatusBadge from "@/components/dashboard/StatusBadge";
 import WhatsAppButton from "@/components/whatsapp/WhatsAppButton";
 import { reminderForMember } from "@/lib/whatsapp";
-import { cn } from "@/lib/utils";
+import { cn, formatIndiaPhone } from "@/lib/utils";
 
 function expiryText(member) {
   if (member.status === "expired") {
@@ -45,7 +45,7 @@ export default function MemberCard({ member, onRenew, gymName, href }) {
           </div>
           <p className="mt-1 flex items-center gap-1.5 text-sm text-body">
             <Phone className="h-3.5 w-3.5 text-mute" aria-hidden="true" />
-            {member.phone}
+            {formatIndiaPhone(member.phone)}
           </p>
         </div>
         <div className="flex flex-col items-end gap-1">

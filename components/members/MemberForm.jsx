@@ -93,14 +93,20 @@ export default function MemberForm({
       </Field>
 
       <Field label="Phone number" error={errors.phone}>
-        <input
-          type="tel"
-          inputMode="numeric"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          placeholder="9876543210"
-          className={inputCls(errors.phone)}
-        />
+        <div className="flex">
+          <span className="inline-flex h-11 select-none items-center rounded-l-sm border border-r-0 border-hairline bg-canvas-soft-2 px-3 text-[15px] font-medium text-body">
+            +91
+          </span>
+          <input
+            type="tel"
+            inputMode="numeric"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+            placeholder="9876543210"
+            maxLength={10}
+            className={cn(inputCls(errors.phone), "rounded-l-none")}
+          />
+        </div>
       </Field>
 
       {!lockPlanFields && (

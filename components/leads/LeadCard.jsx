@@ -13,7 +13,7 @@ import {
 import WhatsAppButton from "@/components/whatsapp/WhatsAppButton";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { leadFollowUpMessage } from "@/lib/whatsapp";
-import { cn } from "@/lib/utils";
+import { cn, formatIndiaPhone } from "@/lib/utils";
 
 function ageText(hours) {
   if (hours < 1) return "Just now";
@@ -80,7 +80,7 @@ export default function LeadCard({ lead, gymName, onDelete }) {
           </div>
           <p className="mt-1 flex items-center gap-1.5 text-sm text-body">
             <Phone className="h-3.5 w-3.5 text-mute" aria-hidden="true" />
-            {lead.phone}
+            {formatIndiaPhone(lead.phone)}
           </p>
         </div>
         <span className="flex shrink-0 items-center gap-1 font-mono text-xs text-mute">

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Download, Loader2, Info } from "lucide-react";
 import { fetcher } from "@/lib/fetcher";
+import { toIndiaWhatsApp } from "@/lib/utils";
 import { format } from "date-fns";
 
 /**
@@ -30,7 +31,9 @@ export default function BroadcastVCF({ gymName }) {
       const vcf = members
         .map(
           (m) =>
-            `BEGIN:VCARD\nVERSION:3.0\nFN:${m.name} (${gymName})\nTEL;TYPE=CELL:${m.phone}\nEND:VCARD`
+            `BEGIN:VCARD\nVERSION:3.0\nFN:${m.name} (${gymName})\nTEL;TYPE=CELL:+${toIndiaWhatsApp(
+              m.phone
+            )}\nEND:VCARD`
         )
         .join("\n");
 

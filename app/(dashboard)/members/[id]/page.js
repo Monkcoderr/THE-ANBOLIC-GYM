@@ -23,6 +23,7 @@ import { ErrorState, CardSkeleton } from "@/components/ui/States";
 import { fetcher } from "@/lib/fetcher";
 import { reminderForMember } from "@/lib/whatsapp";
 import { formatDisplayDate } from "@/lib/dateUtils";
+import { formatIndiaPhone } from "@/lib/utils";
 import { useGym } from "@/components/layout/GymContext";
 
 export default function MemberDetailPage({ params }) {
@@ -78,7 +79,7 @@ export default function MemberDetailPage({ params }) {
                   </h2>
                   <p className="mt-1 flex items-center gap-1.5 text-sm text-body">
                     <Phone className="h-4 w-4 text-mute" aria-hidden="true" />
-                    {member.phone}
+                    {formatIndiaPhone(member.phone)}
                   </p>
                 </div>
                 <StatusBadge status={member.status} mia={member.miaFlagged} />
