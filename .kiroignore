@@ -1,0 +1,5 @@
+# Exclude general AI agent context blueprints
+AGENTS.md
+CLAUDE.md
+
+GEMINI.md
