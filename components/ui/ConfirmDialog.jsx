@@ -30,7 +30,7 @@ export default function ConfirmDialog({
           type="button"
           onClick={onCancel}
           disabled={loading}
-          className="h-11 flex-1 rounded-pill border border-hairline bg-canvas text-sm font-medium text-ink transition active:scale-[0.99] disabled:opacity-50"
+          className="btn-gradient h-11 flex-1 rounded-pill text-sm font-medium transition active:scale-[0.99] disabled:opacity-50"
         >
           {cancelLabel}
         </button>

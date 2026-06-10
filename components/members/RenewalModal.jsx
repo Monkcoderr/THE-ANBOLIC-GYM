@@ -130,7 +130,7 @@ export default function RenewalModal({ member, gymName, onSuccess, onClose }) {
                   className={cn(
                     "h-11 rounded-sm text-sm font-medium transition",
                     paymentMethod === m
-                      ? "bg-primary text-on-primary"
+                      ? "btn-gradient"
                       : "border border-hairline bg-canvas text-ink hover:bg-canvas-soft-2"
                   )}
                 >
@@ -156,7 +156,7 @@ export default function RenewalModal({ member, gymName, onSuccess, onClose }) {
                   className={cn(
                     "h-9 rounded-pill px-4 text-sm font-medium transition",
                     !customDuration && duration === d
-                      ? "bg-primary text-on-primary"
+                      ? "btn-gradient"
                       : "border border-hairline bg-canvas text-ink hover:bg-canvas-soft-2"
                   )}
                 >

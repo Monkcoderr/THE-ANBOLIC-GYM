@@ -124,7 +124,7 @@ export default function MemberForm({
                   className={cn(
                     "h-9 rounded-pill px-4 text-sm font-medium transition",
                     !customDuration && planDurationDays === p.days
-                      ? "bg-primary text-on-primary"
+                      ? "btn-gradient"
                       : "border border-hairline bg-canvas text-ink hover:bg-canvas-soft-2"
                   )}
                 >

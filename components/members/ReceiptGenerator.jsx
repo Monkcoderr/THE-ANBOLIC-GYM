@@ -30,11 +30,11 @@ export default function ReceiptGenerator({ receiptText, phone }) {
         <button
           type="button"
           onClick={copy}
-          className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-pill border border-hairline bg-canvas text-sm font-medium text-ink transition active:scale-[0.99]"
+          className="btn-gradient inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-pill text-sm font-medium transition active:scale-[0.99]"
         >
           {copied ? (
             <>
-              <Check className="h-4 w-4 text-cyan-deep" aria-hidden="true" />
+              <Check className="h-4 w-4" aria-hidden="true" />
               Copied
             </>
           ) : (

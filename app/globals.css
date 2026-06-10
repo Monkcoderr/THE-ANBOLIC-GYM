@@ -178,6 +178,29 @@ body {
   color: transparent;
 }
 
+/* ── Brand action gradient ───────────────────────────────────
+   Replaces plain white / secondary buttons with the gym "fire"
+   gradient. background-size:200% + position shift gives the
+   classic hover sweep that the 51% midpoint is designed for. */
+.btn-gradient {
+  background-image: linear-gradient(
+    to right,
+    #ff512f 0%,
+    #f09819 51%,
+    #ff512f 100%
+  );
+  background-size: 200% auto;
+  color: #ffffff;
+  border: none;
+  transition: background-position 0.4s ease, transform 0.1s ease;
+}
+.btn-gradient:hover {
+  background-position: right center;
+}
+.btn-gradient:disabled {
+  opacity: 0.6;
+}
+
 /* Hide scrollbars on horizontal scroll rows (tab pills) */
 .no-scrollbar::-webkit-scrollbar {
   display: none;

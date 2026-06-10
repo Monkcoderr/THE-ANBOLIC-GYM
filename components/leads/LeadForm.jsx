@@ -151,7 +151,7 @@ function chipCls(active) {
   return cn(
     "h-9 rounded-pill px-4 text-sm font-medium transition",
     active
-      ? "bg-primary text-on-primary"
+      ? "btn-gradient"
       : "border border-hairline bg-canvas text-ink hover:bg-canvas-soft-2"
   );
 }
