@@ -82,10 +82,10 @@ export default function DashboardPage() {
 
   return (
     <>
-      {/* Hero band with mesh gradient */}
+      {/* Hero band with premium gradient glow */}
       <header className="relative overflow-hidden border-b border-hairline bg-canvas px-4 pb-5 pt-8">
         <div
-          className="mesh-gradient pointer-events-none absolute inset-x-0 top-0 h-32 opacity-[0.18] blur-2xl"
+          className="hero-glow pointer-events-none absolute inset-x-0 top-0 h-36"
           aria-hidden="true"
         />
         <div className="relative">
