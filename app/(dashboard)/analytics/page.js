@@ -70,7 +70,7 @@ export default function AnalyticsPage() {
                     icon={UserCheck}
                     label="Active"
                     value={stats.active}
-                    accent="bg-[#aaffec]/50 text-cyan-deep"
+                    accent="bg-cyan/15 text-cyan-deep"
                   />
                   <StatCard
                     icon={UserX}

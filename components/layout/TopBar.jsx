@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, MoreVertical, LogOut } from "lucide-react";
+import ThemeToggle from "@/components/layout/ThemeToggle";
 
 /**
  * TopBar — page title, optional back button, and a menu with logout.
@@ -44,7 +45,9 @@ export default function TopBar({ title, showBack = false }) {
         </h1>
       </div>
 
-      <div className="relative">
+      <div className="flex items-center gap-2">
+        <ThemeToggle />
+        <div className="relative">
         <button
           type="button"
           onClick={() => setMenuOpen((o) => !o)}
@@ -74,6 +77,7 @@ export default function TopBar({ title, showBack = false }) {
             </div>
           </>
         )}
+        </div>
       </div>
     </header>
   );

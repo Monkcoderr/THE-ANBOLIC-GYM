@@ -30,7 +30,10 @@ export const metadata = {
 };
 
 export const viewport = {
-  themeColor: "#171717",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fafafa" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+  ],
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -49,6 +52,11 @@ export default function RootLayout({ children }) {
         />
         <link rel="apple-touch-icon" href="/icons/icon.svg" />
         <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('theme');var d=t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.classList.add('dark');}}catch(e){}})();`,
+          }}
+        />
       </head>
       <body>{children}</body>
     </html>

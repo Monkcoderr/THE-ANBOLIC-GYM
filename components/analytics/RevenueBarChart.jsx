@@ -9,6 +9,7 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
+import { useThemeColors } from "@/hooks/useThemeColors";
 
 function formatRupee(value) {
   if (value >= 100000) return `₹${(value / 100000).toFixed(1)}L`;
@@ -35,6 +36,12 @@ function CustomTooltip({ active, payload, label }) {
  * Props: { data: [{ month, totalAmount, paymentCount }] }
  */
 export default function RevenueBarChart({ data = [] }) {
+  const c = useThemeColors();
+  const ink = c.ink || "#171717";
+  const hairline = c.hairline || "#ebebeb";
+  const mute = c.mute || "#888888";
+  const hover = c.canvasSoft2 || "#f5f5f5";
+
   if (!data.length) {
     return (
       <div className="flex h-56 items-center justify-center text-sm text-mute">
@@ -47,22 +54,22 @@ export default function RevenueBarChart({ data = [] }) {
     <div className="h-56 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 8, right: 4, left: -16, bottom: 0 }}>
-          <CartesianGrid vertical={false} stroke="#ebebeb" />
+          <CartesianGrid vertical={false} stroke={hairline} />
           <XAxis
             dataKey="month"
-            tick={{ fontSize: 11, fill: "#888888" }}
+            tick={{ fontSize: 11, fill: mute }}
             tickLine={false}
-            axisLine={{ stroke: "#ebebeb" }}
+            axisLine={{ stroke: hairline }}
           />
           <YAxis
             tickFormatter={formatRupee}
-            tick={{ fontSize: 11, fill: "#888888" }}
+            tick={{ fontSize: 11, fill: mute }}
             tickLine={false}
             axisLine={false}
             width={48}
           />
-          <Tooltip content={<CustomTooltip />} cursor={{ fill: "#f5f5f5" }} />
-          <Bar dataKey="totalAmount" fill="#171717" radius={[6, 6, 0, 0]} maxBarSize={44} />
+          <Tooltip content={<CustomTooltip />} cursor={{ fill: hover }} />
+          <Bar dataKey="totalAmount" fill={ink} radius={[6, 6, 0, 0]} maxBarSize={44} />
         </BarChart>
       </ResponsiveContainer>
     </div>

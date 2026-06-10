@@ -84,7 +84,7 @@ export default function RenewalModal({ member, gymName, onSuccess, onClose }) {
     >
       {receipt ? (
         <div className="space-y-5">
-          <div className="flex items-center gap-2 rounded-md bg-[#aaffec]/40 px-4 py-3 text-cyan-deep">
+          <div className="flex items-center gap-2 rounded-md bg-cyan/15 px-4 py-3 text-cyan-deep">
             <CheckCircle2 className="h-5 w-5" aria-hidden="true" />
             <p className="text-sm font-medium">
               Renewed until {formatDisplayDate(newExpiry)}

@@ -25,18 +25,15 @@ export default function MembersPage() {
       <TopBar title="Members" />
 
       <div className="space-y-4 px-4 py-4">
-        <div className="flex items-center gap-2">
-          <div className="flex-1">
-            <SearchBar onSearch={setSearch} />
-          </div>
-          <Link
-            href="/members/new"
-            aria-label="Add member"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary transition active:scale-95"
-          >
-            <Plus className="h-5 w-5" aria-hidden="true" />
-          </Link>
-        </div>
+        <SearchBar onSearch={setSearch} />
+
+        <Link
+          href="/members/new"
+          className="flex h-12 w-full items-center justify-center gap-2 rounded-pill bg-primary text-base font-medium text-on-primary shadow-[var(--shadow-subtle)] transition active:scale-[0.98]"
+        >
+          <Plus className="h-5 w-5" aria-hidden="true" />
+          Add new member
+        </Link>
 
         {isLoading ? (
           <CardSkeleton count={5} />

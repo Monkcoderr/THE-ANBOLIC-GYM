@@ -1,8 +1,7 @@
 "use client";
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
-
-const COLORS = { active: "#29bc9b", churned: "#ee0000" };
+import { useThemeColors } from "@/hooks/useThemeColors";
 
 /**
  * RetentionPieChart — active vs churned donut with center retention %.
@@ -10,6 +9,12 @@ const COLORS = { active: "#29bc9b", churned: "#ee0000" };
  * Props: { active, expired }
  */
 export default function RetentionPieChart({ active = 0, expired = 0 }) {
+  const c = useThemeColors();
+  const colors = {
+    active: c.cyanDeep || "#29bc9b",
+    churned: c.error || "#ee0000",
+  };
+
   const total = active + expired;
   if (total === 0) {
     return (
@@ -39,14 +44,16 @@ export default function RetentionPieChart({ active = 0, expired = 0 }) {
             stroke="none"
           >
             {data.map((d) => (
-              <Cell key={d.key} fill={COLORS[d.key]} />
+              <Cell key={d.key} fill={colors[d.key]} />
             ))}
           </Pie>
           <Tooltip
             formatter={(value, name) => [`${value} members`, name]}
             contentStyle={{
               borderRadius: 8,
-              border: "1px solid #ebebeb",
+              border: `1px solid ${c.hairline || "#ebebeb"}`,
+              background: c.canvas || "#ffffff",
+              color: c.ink || "#171717",
               fontSize: 13,
             }}
           />

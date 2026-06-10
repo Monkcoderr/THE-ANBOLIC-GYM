@@ -32,6 +32,7 @@ const withPWA = require("@ducanh2912/next-pwa").default({
 
 const nextConfig = {
   reactStrictMode: true,
+  distDir: process.env.NEXT_DIST_DIR || ".next",
 };
 
 module.exports = withPWA(nextConfig);

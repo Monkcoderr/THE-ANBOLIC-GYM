@@ -5,7 +5,7 @@ const STYLES = {
     label: "Active",
     dot: "bg-cyan-deep",
     text: "text-cyan-deep",
-    bg: "bg-[#aaffec]/50",
+    bg: "bg-cyan/15",
   },
   expiring: {
     label: "Expiring",

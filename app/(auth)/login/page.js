@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Dumbbell, Lock } from "lucide-react";
 import PinPad from "@/components/auth/PinPad";
 import PinDots from "@/components/auth/PinDots";
+import ThemeToggle from "@/components/layout/ThemeToggle";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -87,6 +88,9 @@ export default function LoginPage() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-canvas-soft px-6 py-10">
+      <div className="absolute right-4 top-4">
+        <ThemeToggle />
+      </div>
       <div className="w-full max-w-sm">
         <div className="mb-10 flex flex-col items-center text-center">
           <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-primary text-on-primary">

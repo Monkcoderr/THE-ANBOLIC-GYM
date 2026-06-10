@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Class-based dark mode (toggle .dark on <html>) */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* ─────────────────────────────────────────────────────────────
    Gym Manager Pro — Design tokens (Vercel-inspired, per DESIGN.md)
    ───────────────────────────────────────────────────────────── */
@@ -63,6 +66,51 @@
     0px 24px 32px -8px #0000000f;
 }
 
+/* ── Light / Dark surfaces ───────────────────────────────────
+   Components use semantic tokens (bg-canvas, text-ink, bg-primary …),
+   so overriding the variables under .dark flips the whole UI.
+   In dark mode `primary` (and `ink`) become light, so primary CTAs
+   render as light buttons with dark text — the Vercel dark pattern. */
+:root {
+  color-scheme: light;
+  --ring-color: #00000014;
+  --shimmer-color: rgba(0, 0, 0, 0.05);
+}
+
+.dark {
+  color-scheme: dark;
+  --ring-color: #ffffff14;
+  --shimmer-color: rgba(255, 255, 255, 0.07);
+
+  /* Brand & ink (flip to light) */
+  --color-primary: #ededed;
+  --color-on-primary: #0a0a0a;
+  --color-ink: #ededed;
+  --color-body: #a1a1a1;
+  --color-mute: #8a8a8a;
+  --color-hairline: #2a2a2a;
+  --color-hairline-strong: #4d4d4d;
+
+  /* Surfaces */
+  --color-canvas: #161616;
+  --color-canvas-soft: #0a0a0a;
+  --color-canvas-soft-2: #232323;
+
+  /* Links & semantic (brightened for contrast on dark) */
+  --color-link: #3b9eff;
+  --color-link-deep: #79b8ff;
+  --color-link-bg-soft: #11253f;
+  --color-success: #3b9eff;
+  --color-error: #ff5c5c;
+  --color-error-soft: #3a1a1d;
+  --color-error-deep: #ff8a8a;
+  --color-warning: #f5a623;
+  --color-warning-soft: #382a12;
+  --color-warning-deep: #f5c451;
+  --color-cyan: #50e3c2;
+  --color-cyan-deep: #4ad9bb;
+}
+
 /* ── Base ─────────────────────────────────────────────────── */
 html {
   -webkit-text-size-adjust: 100%;
@@ -81,15 +129,15 @@ body {
 
 ::selection {
   background: var(--color-primary);
-  color: #f2f2f2;
+  color: var(--color-on-primary);
 }
 
 /* Inset hairline card ring helper */
 .card-ring {
-  box-shadow: 0 0 0 1px #00000014, var(--shadow-card);
+  box-shadow: 0 0 0 1px var(--ring-color), var(--shadow-card);
 }
 .card-ring-float {
-  box-shadow: 0 0 0 1px #00000014, var(--shadow-float);
+  box-shadow: 0 0 0 1px var(--ring-color), var(--shadow-float);
 }
 
 /* The signature mesh gradient — hero scale only */
@@ -177,7 +225,7 @@ body {
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(0, 0, 0, 0.04),
+    var(--shimmer-color),
     transparent
   );
   animation: shimmer 1.5s infinite;

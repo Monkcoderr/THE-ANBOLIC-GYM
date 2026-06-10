@@ -7,12 +7,21 @@ import SearchBar from "@/components/dashboard/SearchBar";
 import MIAAlert from "@/components/dashboard/MIAAlert";
 import MemberCard from "@/components/dashboard/MemberCard";
 import RenewalModal from "@/components/members/RenewalModal";
+import ThemeToggle from "@/components/layout/ThemeToggle";
 import { EmptyState, ErrorState, CardSkeleton } from "@/components/ui/States";
 import { useMembers } from "@/hooks/useMembers";
 import { useGym } from "@/components/layout/GymContext";
 
-function Section({ title, accent, members, gymName, onRenew, innerRef }) {
-  if (!members.length) return null;
+function Section({ title, accent, members, gymName, onRenew, innerRef, emptyLabel }) {
+  if (!members.length) {
+    return (
+      <section ref={innerRef} className="scroll-mt-20">
+        <div className="rounded-lg border border-hairline bg-canvas-soft px-4 py-10 text-center">
+          <p className="text-sm text-mute">No {emptyLabel || title.toLowerCase()} members.</p>
+        </div>
+      </section>
+    );
+  }
   return (
     <section ref={innerRef} className="scroll-mt-20">
       <div className="mb-2 flex items-center gap-2">
@@ -37,9 +46,16 @@ function Section({ title, accent, members, gymName, onRenew, innerRef }) {
   );
 }
 
+const TABS = [
+  { key: "expired", label: "Expired", accent: "bg-error", dot: "bg-error" },
+  { key: "expiring", label: "Expiring soon", accent: "bg-warning", dot: "bg-warning" },
+  { key: "active", label: "Active", accent: "bg-cyan-deep", dot: "bg-cyan-deep" },
+];
+
 export default function DashboardPage() {
   const { gymName } = useGym();
   const [search, setSearch] = useState("");
+  const [tab, setTab] = useState("expired");
   const [renewing, setRenewing] = useState(null);
   const expiredRef = useRef(null);
 
@@ -59,6 +75,11 @@ export default function DashboardPage() {
   const active = filtered.filter((m) => m.status === "active");
   const miaCount = expired.filter((m) => m.miaFlagged).length;
 
+  const counts = { expired: expired.length, expiring: expiring.length, active: active.length };
+  const buckets = { expired, expiring, active };
+  const current = TABS.find((t) => t.key === tab) || TABS[0];
+  const currentMembers = buckets[tab];
+
   return (
     <>
       {/* Hero band with mesh gradient */}
@@ -68,6 +89,9 @@ export default function DashboardPage() {
           aria-hidden="true"
         />
         <div className="relative">
+          <div className="absolute right-0 top-0">
+            <ThemeToggle />
+          </div>
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-on-primary">
               <Dumbbell className="h-4 w-4" aria-hidden="true" />
@@ -88,10 +112,52 @@ export default function DashboardPage() {
         {!isLoading && !isError && (
           <MIAAlert
             count={miaCount}
-            onPress={() =>
-              expiredRef.current?.scrollIntoView({ behavior: "smooth" })
-            }
+            onPress={() => {
+              setTab("expired");
+              expiredRef.current?.scrollIntoView({ behavior: "smooth" });
+            }}
           />
+        )}
+
+        {/* Status toggle — defaults to Expired so the owner sees churn first */}
+        {!isLoading && !isError && members.length > 0 && (
+          <div
+            role="tablist"
+            aria-label="Filter members by status"
+            className="grid grid-cols-3 gap-2 rounded-lg border border-hairline bg-canvas-soft p-1"
+          >
+            {TABS.map((t) => {
+              const isActive = tab === t.key;
+              return (
+                <button
+                  key={t.key}
+                  role="tab"
+                  aria-selected={isActive}
+                  onClick={() => setTab(t.key)}
+                  className={`flex items-center justify-center gap-1.5 rounded-md px-2 py-2 text-xs font-medium tracking-[-0.28px] transition ${
+                    isActive
+                      ? "bg-primary text-on-primary shadow-[var(--shadow-subtle)]"
+                      : "text-body active:bg-canvas"
+                  }`}
+                >
+                  <span
+                    className={`h-1.5 w-1.5 shrink-0 rounded-full ${t.dot}`}
+                    aria-hidden="true"
+                  />
+                  <span className="truncate">{t.label}</span>
+                  <span
+                    className={`ml-0.5 inline-flex min-w-[1.25rem] items-center justify-center rounded-full px-1 text-[11px] font-semibold tabular-nums ${
+                      isActive
+                        ? "bg-on-primary/20 text-on-primary"
+                        : "bg-canvas text-ink"
+                    }`}
+                  >
+                    {counts[t.key]}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         )}
 
         {isLoading ? (
@@ -116,30 +182,15 @@ export default function DashboardPage() {
         ) : filtered.length === 0 ? (
           <EmptyState title="No matches" message="Try a different search." />
         ) : (
-          <div className="space-y-6">
-            <Section
-              title="Expired"
-              accent="bg-error"
-              members={expired}
-              gymName={gymName}
-              onRenew={setRenewing}
-              innerRef={expiredRef}
-            />
-            <Section
-              title="Expiring soon"
-              accent="bg-warning"
-              members={expiring}
-              gymName={gymName}
-              onRenew={setRenewing}
-            />
-            <Section
-              title="Active"
-              accent="bg-cyan-deep"
-              members={active}
-              gymName={gymName}
-              onRenew={setRenewing}
-            />
-          </div>
+          <Section
+            title={current.label}
+            accent={current.accent}
+            members={currentMembers}
+            gymName={gymName}
+            onRenew={setRenewing}
+            innerRef={tab === "expired" ? expiredRef : undefined}
+            emptyLabel={current.label.toLowerCase()}
+          />
         )}
       </div>
 
