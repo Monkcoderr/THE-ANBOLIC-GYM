@@ -87,7 +87,7 @@ export default function MemberForm({
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Rahul Sharma"
+          placeholder=""
           className={inputCls(errors.name)}
         />
       </Field>
@@ -102,7 +102,7 @@ export default function MemberForm({
             inputMode="numeric"
             value={phone}
             onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
-            placeholder="9876543210"
+            placeholder=""
             maxLength={10}
             className={cn(inputCls(errors.phone), "rounded-l-none")}
           />
