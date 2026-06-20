@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, MoreVertical, LogOut } from "lucide-react";
+import { ChevronLeft, MoreVertical, LogOut, KeyRound } from "lucide-react";
 import ThemeToggle from "@/components/layout/ThemeToggle";
+import ChangePinSheet from "@/components/auth/ChangePinSheet";
 
 /**
  * TopBar — page title, optional back button, and a menu with logout.
@@ -13,6 +14,7 @@ export default function TopBar({ title, showBack = false }) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [changePinOpen, setChangePinOpen] = useState(false);
 
   async function logout() {
     setLoggingOut(true);
@@ -25,6 +27,7 @@ export default function TopBar({ title, showBack = false }) {
   }
 
   return (
+    <>
     <header
       className="sticky top-0 z-30 flex h-16 items-center justify-between gap-2 border-b border-hairline bg-canvas/95 px-4 backdrop-blur-md"
       style={{ paddingTop: "env(safe-area-inset-top)" }}
@@ -67,6 +70,17 @@ export default function TopBar({ title, showBack = false }) {
             <div className="absolute right-0 top-11 z-20 w-44 animate-fade-in overflow-hidden rounded-md bg-canvas py-1 shadow-[var(--shadow-modal)]">
               <button
                 type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  setChangePinOpen(true);
+                }}
+                className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-ink transition hover:bg-canvas-soft-2"
+              >
+                <KeyRound className="h-4 w-4" aria-hidden="true" />
+                Change PIN
+              </button>
+              <button
+                type="button"
                 onClick={logout}
                 disabled={loggingOut}
                 className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-error transition hover:bg-canvas-soft-2 disabled:opacity-60"
@@ -80,5 +94,10 @@ export default function TopBar({ title, showBack = false }) {
         </div>
       </div>
     </header>
+    <ChangePinSheet
+      open={changePinOpen}
+      onClose={() => setChangePinOpen(false)}
+    />
+    </>
   );
 }
