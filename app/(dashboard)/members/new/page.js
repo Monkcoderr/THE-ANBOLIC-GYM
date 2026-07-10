@@ -2,6 +2,7 @@
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { mutate } from "swr";
 import TopBar from "@/components/layout/TopBar";
 import MemberForm from "@/components/members/MemberForm";
 import LoadingSpinner from "@/components/layout/LoadingSpinner";
@@ -48,6 +49,12 @@ function NewMemberInner() {
           /* non-fatal */
         }
       }
+      // Refresh cached members lists so the new member shows up instantly.
+      mutate(
+        (key) => typeof key === "string" && key.startsWith("/api/members"),
+        undefined,
+        { revalidate: true }
+      );
       router.replace(`/members/${json.data._id}`);
     } catch {
       setError("Network error. Please try again.");

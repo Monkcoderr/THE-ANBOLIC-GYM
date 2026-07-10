@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { mutate } from "swr";
 import { CheckCircle2 } from "lucide-react";
 import TopBar from "@/components/layout/TopBar";
 import QuickAddForm from "@/components/members/QuickAddForm";
@@ -37,6 +38,13 @@ export default function QuickAddPage() {
         },
         ...prev,
       ]);
+      // Invalidate every cached members list so /members and /dashboard show
+      // the new member immediately (no waiting for the 30s dedupe window).
+      mutate(
+        (key) => typeof key === "string" && key.startsWith("/api/members"),
+        undefined,
+        { revalidate: true }
+      );
       // Reset the form for the next entry.
       setFormKey((k) => k + 1);
       setIsSubmitting(false);

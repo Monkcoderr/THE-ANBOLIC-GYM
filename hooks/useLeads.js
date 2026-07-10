@@ -10,6 +10,8 @@ export function useLeads() {
   const { data, error, isLoading, mutate } = useSWR("/api/leads", fetcher, {
     dedupingInterval: 30000,
     revalidateOnFocus: false,
+    revalidateOnReconnect: true,
+    keepPreviousData: true,
   });
 
   return {

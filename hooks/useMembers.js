@@ -17,6 +17,8 @@ export function useMembers(params = {}) {
   const { data, error, isLoading, mutate } = useSWR(key, fetcher, {
     dedupingInterval: 30000,
     revalidateOnFocus: false,
+    revalidateOnReconnect: true,
+    keepPreviousData: true,
   });
 
   return {
