@@ -16,6 +16,9 @@ const CreateSchema = z.object({
     .int()
     .positive("Plan duration must be positive"),
   planStartDate: z.coerce.date().optional(),
+  // When provided, the member is created working BACKWARDS from this expiry
+  // (used for migrating existing/old members). planStartDate is derived.
+  planEndDate: z.coerce.date().optional(),
   address: z.string().optional(),
   notes: z.string().optional(),
 });
@@ -82,8 +85,23 @@ export async function POST(request) {
       return fail("Phone must be at least 10 digits", "VALIDATION_ERROR", 422);
     }
 
-    const planStartDate = parsed.data.planStartDate || new Date();
-    const planEndDate = addDays(planStartDate, planDurationDays);
+    // Two creation modes:
+    //  • Forward (new signup): start date + duration → derive expiry.
+    //  • Backwards (migrating an old member): known expiry + plan length →
+    //    derive the start date so the record stays internally consistent.
+    let planStartDate;
+    let planEndDate;
+    let joinDate;
+    if (parsed.data.planEndDate) {
+      planEndDate = parsed.data.planEndDate;
+      planStartDate = addDays(planEndDate, -planDurationDays);
+      // Backdate joinDate so migrated members don't pollute "new this month".
+      joinDate = planStartDate;
+    } else {
+      planStartDate = parsed.data.planStartDate || new Date();
+      planEndDate = addDays(planStartDate, planDurationDays);
+      joinDate = new Date();
+    }
     const status = computeMemberStatus(planEndDate);
 
     const existing = await Member.findOne({ phone, isDeleted: { $ne: true } });
@@ -104,7 +122,7 @@ export async function POST(request) {
       status,
       address: address || "",
       notes: notes || "",
-      joinDate: new Date(),
+      joinDate,
     });
 
     return ok(decorateMember(member.toObject()), { status: 201 });

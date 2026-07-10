@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Plus, Users } from "lucide-react";
+import { Plus, Users, History } from "lucide-react";
 import TopBar from "@/components/layout/TopBar";
 import SearchBar from "@/components/dashboard/SearchBar";
 import MemberCard from "@/components/dashboard/MemberCard";
@@ -33,6 +33,14 @@ export default function MembersPage() {
         >
           <Plus className="h-5 w-5" aria-hidden="true" />
           Add new member
+        </Link>
+
+        <Link
+          href="/members/quick-add"
+          className="flex h-11 w-full items-center justify-center gap-2 rounded-pill border border-hairline bg-canvas text-sm font-medium text-body transition hover:bg-canvas-soft-2 active:scale-[0.98]"
+        >
+          <History className="h-4 w-4" aria-hidden="true" />
+          Add old members (by expiry)
         </Link>
 
         {isLoading ? (
