@@ -16,15 +16,15 @@ const geistMono = JetBrains_Mono({
 });
 
 export const metadata = {
-  title: "Gym Manager Pro",
+  title: "ANABOLIC GYM",
   description:
     "The paper-register killer. Manage members, renewals, leads, and WhatsApp info from your pocket.",
   manifest: "/manifest.json",
-  applicationName: "Gym Manager Pro",
+  applicationName: "ANABOLIC GYM",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black",
-    title: "Gym Manager Pro",
+    title: "ANABOLIC GYM",
   },
   formatDetection: { telephone: false },
 };
@@ -50,8 +50,14 @@ export default function RootLayout({ children }) {
           name="apple-mobile-web-app-status-bar-style"
           content="black"
         />
-        <link rel="apple-touch-icon" href="/icons/icon.svg" />
-        <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+        <link
+          rel="icon"
+          href="/icons/favicon-32.png"
+          type="image/png"
+          sizes="32x32"
+        />
+        <link rel="icon" href="/icons/icon-192.png" type="image/png" sizes="192x192" />
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var t=localStorage.getItem('theme');var d=t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.classList.add('dark');}}catch(e){}})();`,

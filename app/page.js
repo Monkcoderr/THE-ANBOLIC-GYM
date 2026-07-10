@@ -33,5 +33,5 @@ export default function HomePage() {
     };
   }, [router]);
 
-  return <LoadingSpinner label="Starting Gym Manager Pro" />;
+  return <LoadingSpinner label="Starting ANABOLIC GYM" />;
 }
