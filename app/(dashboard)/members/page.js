@@ -53,7 +53,7 @@ export default function MembersPage() {
             title={search ? "No matches" : "No members yet"}
             message={
               search
-                ? "Try a different name or phone number."
+                ? "Try a different name, phone number, or member ID."
                 : "Add your first member to get started."
             }
             action={

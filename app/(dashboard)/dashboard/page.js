@@ -66,7 +66,9 @@ export default function DashboardPage() {
     const q = search.toLowerCase();
     return members.filter(
       (m) =>
-        m.name.toLowerCase().includes(q) || m.phone.toLowerCase().includes(q)
+        m.name.toLowerCase().includes(q) ||
+        m.phone.toLowerCase().includes(q) ||
+        (m.customMemberId && m.customMemberId.toLowerCase().includes(q))
     );
   }, [members, search]);
 

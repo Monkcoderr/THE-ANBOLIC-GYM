@@ -29,13 +29,21 @@ export default function MemberCard({ member, onRenew, gymName, href }) {
     <>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <h3 className="truncate text-base font-medium text-ink">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            {member.customMemberId && (
+              <span
+                className="inline-flex shrink-0 items-center rounded-md bg-link-bg-soft px-2 py-0.5 font-mono text-sm font-semibold tracking-tight text-link-deep"
+                title="Member ID"
+              >
+                #{member.customMemberId}
+              </span>
+            )}
+            <h3 className="min-w-0 truncate text-base font-medium text-ink">
               {member.name}
             </h3>
             {member.miaFlagged && (
               <span
-                className="inline-flex items-center gap-1 rounded-full bg-error px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white"
+                className="inline-flex shrink-0 items-center gap-1 rounded-full bg-error px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white"
                 title="Missing 7+ days"
               >
                 <AlertOctagon className="h-3 w-3" aria-hidden="true" />

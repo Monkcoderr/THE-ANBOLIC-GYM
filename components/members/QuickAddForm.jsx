@@ -35,6 +35,7 @@ export default function QuickAddForm({ onSubmit, isSubmitting = false }) {
   const nameRef = useRef(null);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [customMemberId, setCustomMemberId] = useState("");
   const [expiry, setExpiry] = useState(todayInput());
   const [planDurationDays, setPlanDurationDays] = useState(30);
   const [errors, setErrors] = useState({});
@@ -59,6 +60,7 @@ export default function QuickAddForm({ onSubmit, isSubmitting = false }) {
     onSubmit?.({
       name: name.trim(),
       phone: phone.replace(/\D/g, ""),
+      customMemberId: customMemberId.trim(),
       planDurationDays,
       planEndDate: expiry,
     });
@@ -91,6 +93,17 @@ export default function QuickAddForm({ onSubmit, isSubmitting = false }) {
             className={cn(inputCls(errors.phone), "rounded-l-none")}
           />
         </div>
+      </Field>
+
+      <Field label="Member ID (optional)" error={errors.customMemberId}>
+        <input
+          type="text"
+          value={customMemberId}
+          onChange={(e) => setCustomMemberId(e.target.value)}
+          placeholder="e.g. GYM-001"
+          autoCapitalize="characters"
+          className={inputCls(errors.customMemberId)}
+        />
       </Field>
 
       <Field label="Current expiry date" error={errors.expiry}>

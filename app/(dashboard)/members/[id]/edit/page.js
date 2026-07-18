@@ -28,6 +28,7 @@ export default function EditMemberPage({ params }) {
         body: JSON.stringify({
           name: formData.name,
           phone: formData.phone,
+          customMemberId: formData.customMemberId,
           address: formData.address,
           notes: formData.notes,
         }),

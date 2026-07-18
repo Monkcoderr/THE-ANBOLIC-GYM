@@ -9,7 +9,7 @@ import { Search, X } from "lucide-react";
  */
 export default function SearchBar({
   onSearch,
-  placeholder = "Search by name or phone…",
+  placeholder = "Search by name, phone, or ID…",
   initialValue = "",
 }) {
   const [value, setValue] = useState(initialValue);

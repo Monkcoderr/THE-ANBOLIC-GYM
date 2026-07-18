@@ -77,6 +77,11 @@ export default function MemberDetailPage({ params }) {
                   <h2 className="text-2xl font-semibold tracking-[-0.96px] text-ink">
                     {member.name}
                   </h2>
+                  {member.customMemberId && (
+                    <span className="mt-1 inline-flex items-center rounded-md bg-link-bg-soft px-2 py-0.5 font-mono text-sm font-semibold text-link-deep">
+                      #{member.customMemberId}
+                    </span>
+                  )}
                   <p className="mt-1 flex items-center gap-1.5 text-sm text-body">
                     <Phone className="h-4 w-4 text-mute" aria-hidden="true" />
                     {formatIndiaPhone(member.phone)}

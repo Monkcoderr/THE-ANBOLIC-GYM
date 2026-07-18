@@ -4,13 +4,14 @@ import Member from "@/models/Member";
 import Payment from "@/models/Payment";
 import { ok, fail, requireAuth } from "@/lib/apiResponse";
 import { decorateMember } from "@/lib/memberUtils";
-import { digitsOnly } from "@/lib/utils";
+import { digitsOnly, normalizeMemberId } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 const UpdateSchema = z.object({
   name: z.string().trim().min(1).optional(),
   phone: z.string().min(10).optional(),
+  customMemberId: z.string().trim().max(40, "ID is too long").optional(),
   address: z.string().optional(),
   notes: z.string().optional(),
 });
@@ -59,6 +60,7 @@ export async function PUT(request, { params }) {
     }
 
     const update = {};
+    const unset = {};
     if (parsed.data.name !== undefined) update.name = parsed.data.name;
     if (parsed.data.address !== undefined) update.address = parsed.data.address;
     if (parsed.data.notes !== undefined) update.notes = parsed.data.notes;
@@ -78,9 +80,32 @@ export async function PUT(request, { params }) {
       update.phone = phone;
     }
 
+    // Custom member ID: assign, change, or clear. An empty value unsets the
+    // field so the sparse unique index stops tracking this member.
+    if (parsed.data.customMemberId !== undefined) {
+      const customMemberId = normalizeMemberId(parsed.data.customMemberId);
+      if (customMemberId) {
+        const idClash = await Member.findOne({
+          customMemberId,
+          _id: { $ne: params.id },
+          isDeleted: { $ne: true },
+        });
+        if (idClash) {
+          return fail("That member ID is already in use", "DUPLICATE_MEMBER_ID", 409);
+        }
+        update.customMemberId = customMemberId;
+      } else {
+        unset.customMemberId = "";
+      }
+    }
+
+    const mutation = {};
+    if (Object.keys(update).length) mutation.$set = update;
+    if (Object.keys(unset).length) mutation.$unset = unset;
+
     const member = await Member.findOneAndUpdate(
       { _id: params.id, isDeleted: { $ne: true } },
-      { $set: update },
+      mutation,
       { new: true }
     ).lean();
 
@@ -88,6 +113,9 @@ export async function PUT(request, { params }) {
     return ok(decorateMember(member));
   } catch (err) {
     if (err?.code === 11000) {
+      if (err?.keyPattern?.customMemberId) {
+        return fail("That member ID is already in use", "DUPLICATE_MEMBER_ID", 409);
+      }
       return fail("Phone already in use", "DUPLICATE_PHONE", 409);
     }
     return fail("Unable to update member", "MEMBER_UPDATE_FAILED", 500);

@@ -30,6 +30,9 @@ export default function MemberForm({
 }) {
   const [name, setName] = useState(initialData.name || "");
   const [phone, setPhone] = useState(initialData.phone || "");
+  const [customMemberId, setCustomMemberId] = useState(
+    initialData.customMemberId || ""
+  );
   const [planDurationDays, setPlanDurationDays] = useState(
     initialData.planDurationDays || 30
   );
@@ -73,6 +76,7 @@ export default function MemberForm({
     onSubmit?.({
       name: name.trim(),
       phone: phone.replace(/\D/g, ""),
+      customMemberId: customMemberId.trim(),
       planDurationDays: effectiveDuration,
       planStartDate,
       address: address.trim(),
@@ -107,6 +111,20 @@ export default function MemberForm({
             className={cn(inputCls(errors.phone), "rounded-l-none")}
           />
         </div>
+      </Field>
+
+      <Field label="Member ID (optional)" error={errors.customMemberId}>
+        <input
+          type="text"
+          value={customMemberId}
+          onChange={(e) => setCustomMemberId(e.target.value)}
+          placeholder="e.g. GYM-001"
+          autoCapitalize="characters"
+          className={inputCls(errors.customMemberId)}
+        />
+        <p className="mt-1.5 text-xs text-mute">
+          A unique ID for this member. Shown on their card and searchable.
+        </p>
       </Field>
 
       {!lockPlanFields && (

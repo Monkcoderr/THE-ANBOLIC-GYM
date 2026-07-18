@@ -4,13 +4,14 @@ import Member from "@/models/Member";
 import { ok, fail, requireAuth } from "@/lib/apiResponse";
 import { decorateMember, sortMembers } from "@/lib/memberUtils";
 import { computeMemberStatus, addDays } from "@/lib/dateUtils";
-import { digitsOnly } from "@/lib/utils";
+import { digitsOnly, normalizeMemberId } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 const CreateSchema = z.object({
   name: z.string().trim().min(1, "Name is required"),
   phone: z.string().min(10, "Phone must be at least 10 digits"),
+  customMemberId: z.string().trim().max(40, "ID is too long").optional(),
   planDurationDays: z.coerce
     .number()
     .int()
@@ -39,7 +40,7 @@ export async function GET(request) {
     const query = { isDeleted: { $ne: true } };
     if (search) {
       const rx = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
-      query.$or = [{ name: rx }, { phone: rx }];
+      query.$or = [{ name: rx }, { phone: rx }, { customMemberId: rx }];
     }
 
     const raw = await Member.find(query).lean();
@@ -113,9 +114,27 @@ export async function POST(request) {
       );
     }
 
+    // Custom member ID is optional. When supplied it must be globally unique
+    // across non-deleted members.
+    const customMemberId = normalizeMemberId(parsed.data.customMemberId);
+    if (customMemberId) {
+      const idClash = await Member.findOne({
+        customMemberId,
+        isDeleted: { $ne: true },
+      });
+      if (idClash) {
+        return fail(
+          "That member ID is already in use",
+          "DUPLICATE_MEMBER_ID",
+          409
+        );
+      }
+    }
+
     const member = await Member.create({
       name,
       phone,
+      customMemberId,
       planDurationDays,
       planStartDate,
       planEndDate,
@@ -128,6 +147,9 @@ export async function POST(request) {
     return ok(decorateMember(member.toObject()), { status: 201 });
   } catch (err) {
     if (err?.code === 11000) {
+      if (err?.keyPattern?.customMemberId) {
+        return fail("That member ID is already in use", "DUPLICATE_MEMBER_ID", 409);
+      }
       return fail("Phone number already in use", "DUPLICATE_PHONE", 409);
     }
     return fail("Unable to create member", "MEMBER_CREATE_FAILED", 500);
