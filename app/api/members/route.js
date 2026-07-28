@@ -3,7 +3,7 @@ import { connectDB } from "@/lib/mongodb";
 import Member from "@/models/Member";
 import { ok, fail, requireAuth } from "@/lib/apiResponse";
 import { decorateMember, sortMembers } from "@/lib/memberUtils";
-import { computeMemberStatus, addDays } from "@/lib/dateUtils";
+import { computeMemberStatus, addDays, computeInitialExpiry } from "@/lib/dateUtils";
 import { digitsOnly, normalizeMemberId } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -100,8 +100,11 @@ export async function POST(request) {
       joinDate = planStartDate;
     } else {
       planStartDate = parsed.data.planStartDate || new Date();
-      planEndDate = addDays(planStartDate, planDurationDays);
-      joinDate = new Date();
+      // Anchor the expiry to the member's joining day-of-month so every future
+      // renewal falls on the same calendar day. The joining date IS the start
+      // date for a new signup.
+      planEndDate = computeInitialExpiry(planStartDate, planDurationDays);
+      joinDate = planStartDate;
     }
     const status = computeMemberStatus(planEndDate);
 

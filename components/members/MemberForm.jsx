@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { Loader2 } from "lucide-react";
-import { addDays, formatDisplayDate } from "@/lib/dateUtils";
+import { computeInitialExpiry, formatDisplayDate } from "@/lib/dateUtils";
 import { cn } from "@/lib/utils";
 
 const PRESETS = [
@@ -17,9 +17,27 @@ function todayInput() {
   return new Date().toISOString().slice(0, 10);
 }
 
+/** "05" → "5th", for the fixed renewal-day hint. */
+function ordinalDay(isoDate) {
+  const day = new Date(isoDate).getDate();
+  if (!day) return "";
+  const rem100 = day % 100;
+  if (rem100 >= 11 && rem100 <= 13) return `${day}th`;
+  switch (day % 10) {
+    case 1:
+      return `${day}st`;
+    case 2:
+      return `${day}nd`;
+    case 3:
+      return `${day}rd`;
+    default:
+      return `${day}th`;
+  }
+}
+
 /**
  * MemberForm — create/edit a member.
- * Props: { initialData, onSubmit, isSubmitting, submitLabel, lockPlanFields }
+ * Props: { initialData, onSubmit, isSubmitting, submitLabel, lockPlanFields, editJoinDate }
  */
 export default function MemberForm({
   initialData = {},
@@ -27,6 +45,7 @@ export default function MemberForm({
   isSubmitting = false,
   submitLabel = "Save member",
   lockPlanFields = false,
+  editJoinDate = false,
 }) {
   const [name, setName] = useState(initialData.name || "");
   const [phone, setPhone] = useState(initialData.phone || "");
@@ -42,6 +61,11 @@ export default function MemberForm({
       ? new Date(initialData.planStartDate).toISOString().slice(0, 10)
       : todayInput()
   );
+  const [joinDate, setJoinDate] = useState(
+    initialData.joinDate
+      ? new Date(initialData.joinDate).toISOString().slice(0, 10)
+      : todayInput()
+  );
   const [address, setAddress] = useState(initialData.address || "");
   const [notes, setNotes] = useState(initialData.notes || "");
   const [errors, setErrors] = useState({});
@@ -53,7 +77,8 @@ export default function MemberForm({
   const endPreview = useMemo(() => {
     if (!effectiveDuration || effectiveDuration <= 0) return null;
     try {
-      return addDays(new Date(planStartDate), effectiveDuration);
+      // Expiry is anchored to the joining day-of-month, not raw day count.
+      return computeInitialExpiry(new Date(planStartDate), effectiveDuration);
     } catch {
       return null;
     }
@@ -66,6 +91,7 @@ export default function MemberForm({
     if (digits.length < 10) e.phone = "Enter a valid 10-digit phone number.";
     if (!lockPlanFields && (!effectiveDuration || effectiveDuration <= 0))
       e.duration = "Choose a plan duration.";
+    if (editJoinDate && !joinDate) e.joinDate = "Joining date is required.";
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -73,7 +99,7 @@ export default function MemberForm({
   function handleSubmit(e) {
     e.preventDefault();
     if (!validate()) return;
-    onSubmit?.({
+    const payload = {
       name: name.trim(),
       phone: phone.replace(/\D/g, ""),
       customMemberId: customMemberId.trim(),
@@ -81,7 +107,11 @@ export default function MemberForm({
       planStartDate,
       address: address.trim(),
       notes: notes.trim(),
-    });
+    };
+    // Joining date is only editable on the edit screen; it's the permanent
+    // billing anchor every future renewal is calculated from.
+    if (editJoinDate) payload.joinDate = joinDate;
+    onSubmit?.(payload);
   }
 
   return (
@@ -126,6 +156,25 @@ export default function MemberForm({
           A unique ID for this member. Shown on their card and searchable.
         </p>
       </Field>
+
+      {editJoinDate && (
+        <Field label="Joining date" error={errors.joinDate}>
+          <input
+            type="date"
+            value={joinDate}
+            onChange={(e) => setJoinDate(e.target.value)}
+            className={inputCls(errors.joinDate)}
+          />
+          <p className="mt-1.5 text-xs text-mute">
+            Sets the fixed monthly renewal day
+            {joinDate
+              ? ` (the ${ordinalDay(joinDate)} of each month)`
+              : ""}
+            . Every future renewal is anchored to this date, whatever day
+            payment is made.
+          </p>
+        </Field>
+      )}
 
       {!lockPlanFields && (
         <>

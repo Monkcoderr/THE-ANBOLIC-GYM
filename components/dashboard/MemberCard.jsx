@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Phone, RefreshCw, AlertOctagon, ChevronRight } from "lucide-react";
+import { Phone, RefreshCw, AlertOctagon, ChevronRight, Sparkles } from "lucide-react";
 import StatusBadge from "@/components/dashboard/StatusBadge";
 import WhatsAppButton from "@/components/whatsapp/WhatsAppButton";
 import { reminderForMember } from "@/lib/whatsapp";
@@ -41,6 +41,15 @@ export default function MemberCard({ member, onRenew, gymName, href }) {
             <h3 className="min-w-0 truncate text-base font-medium text-ink">
               {member.name}
             </h3>
+            {member.isNewMember && (
+              <span
+                className="inline-flex shrink-0 items-center gap-1 rounded-full bg-link-bg-soft px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-link-deep"
+                title="Joined in the last 30 days"
+              >
+                <Sparkles className="h-3 w-3" aria-hidden="true" />
+                New
+              </span>
+            )}
             {member.miaFlagged && (
               <span
                 className="inline-flex shrink-0 items-center gap-1 rounded-full bg-error px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white"

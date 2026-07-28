@@ -29,6 +29,7 @@ export default function EditMemberPage({ params }) {
           name: formData.name,
           phone: formData.phone,
           customMemberId: formData.customMemberId,
+          joinDate: formData.joinDate,
           address: formData.address,
           notes: formData.notes,
         }),
@@ -67,9 +68,12 @@ export default function EditMemberPage({ params }) {
               isSubmitting={isSubmitting}
               submitLabel="Save changes"
               lockPlanFields
+              editJoinDate
             />
             <p className="mt-3 text-center text-xs text-mute">
-              To change the plan duration or expiry, use Renew on the member page.
+              Changing the joining date sets the fixed monthly renewal day for
+              all future renewals. To change the plan duration or current
+              expiry, use Renew on the member page.
             </p>
           </>
         )}

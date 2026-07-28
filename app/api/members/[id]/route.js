@@ -12,6 +12,7 @@ const UpdateSchema = z.object({
   name: z.string().trim().min(1).optional(),
   phone: z.string().min(10).optional(),
   customMemberId: z.string().trim().max(40, "ID is too long").optional(),
+  joinDate: z.coerce.date().optional(),
   address: z.string().optional(),
   notes: z.string().optional(),
 });
@@ -64,6 +65,10 @@ export async function PUT(request, { params }) {
     if (parsed.data.name !== undefined) update.name = parsed.data.name;
     if (parsed.data.address !== undefined) update.address = parsed.data.address;
     if (parsed.data.notes !== undefined) update.notes = parsed.data.notes;
+    // Joining date is the permanent billing anchor. Changing it re-bases every
+    // future renewal onto the new day-of-month (the next renewal re-anchors the
+    // expiry); the current expiry is left untouched.
+    if (parsed.data.joinDate !== undefined) update.joinDate = parsed.data.joinDate;
     if (parsed.data.phone !== undefined) {
       const phone = digitsOnly(parsed.data.phone);
       if (phone.length < 10) {

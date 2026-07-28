@@ -7,7 +7,7 @@ import { ok, fail, requireAuth } from "@/lib/apiResponse";
 import { decorateMember } from "@/lib/memberUtils";
 import {
   computeMemberStatus,
-  addDays,
+  computeRenewalExpiry,
   startOfDay,
 } from "@/lib/dateUtils";
 import { generateReceiptText } from "@/lib/receiptFormatter";
@@ -51,15 +51,19 @@ export async function POST(request, { params }) {
     const previousExpiry = member.planEndDate;
     const today = startOfDay(new Date());
 
-    let newStartDate;
-    let newExpiry;
-    if (currentStatus === "expired") {
-      newStartDate = today;
-      newExpiry = addDays(today, planDurationDays);
-    } else {
-      newStartDate = member.planStartDate;
-      newExpiry = addDays(previousExpiry, planDurationDays);
-    }
+    // Anchor the new expiry to the member's joining day-of-month. The payment
+    // date is only recorded, never used to compute the renewal day — the cycle
+    // stays fixed to the joining date regardless of when the member pays.
+    const anchorDate = member.joinDate || member.planStartDate || previousExpiry;
+    const newExpiry = computeRenewalExpiry(
+      anchorDate,
+      previousExpiry,
+      planDurationDays,
+      today
+    );
+    // The new billing period runs continuously from the previous expiry.
+    const newStartDate =
+      currentStatus === "expired" ? today : previousExpiry;
 
     const gymName = session.gymName || (await Admin.findOne().lean())?.gymName || "Gym";
 

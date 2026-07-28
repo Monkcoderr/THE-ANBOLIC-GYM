@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { Loader2, CheckCircle2 } from "lucide-react";
 import BottomSheet from "@/components/ui/BottomSheet";
 import ReceiptGenerator from "@/components/members/ReceiptGenerator";
-import { addDays, formatDisplayDate } from "@/lib/dateUtils";
+import { computeRenewalExpiry, formatDisplayDate } from "@/lib/dateUtils";
 import { cn } from "@/lib/utils";
 
 const PRESETS = [30, 60, 90, 180, 365];
@@ -29,10 +29,12 @@ export default function RenewalModal({ member, gymName, onSuccess, onClose }) {
 
   const newExpiry = useMemo(() => {
     if (!effectiveDuration || effectiveDuration <= 0) return null;
-    const base =
-      member.status === "expired" ? new Date() : new Date(member.planEndDate);
-    return addDays(base, effectiveDuration);
-  }, [effectiveDuration, member.status, member.planEndDate]);
+    // Anchor to the joining day-of-month — the renewal day never shifts with
+    // the payment date. Falls back to plan start / current expiry for legacy
+    // members that predate a stored joining date.
+    const anchor = member.joinDate || member.planStartDate || member.planEndDate;
+    return computeRenewalExpiry(anchor, member.planEndDate, effectiveDuration);
+  }, [effectiveDuration, member.joinDate, member.planStartDate, member.planEndDate]);
 
   async function handleSubmit() {
     const amt = parseFloat(amount);

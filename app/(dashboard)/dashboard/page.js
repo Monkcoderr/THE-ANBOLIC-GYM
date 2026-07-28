@@ -47,9 +47,10 @@ function Section({ title, accent, members, gymName, onRenew, innerRef, emptyLabe
 }
 
 const TABS = [
-  { key: "expired", label: "Expired", accent: "bg-error", dot: "bg-error" },
-  { key: "expiring", label: "Expiring soon", accent: "bg-warning", dot: "bg-warning" },
-  { key: "active", label: "Active", accent: "bg-cyan-deep", dot: "bg-cyan-deep" },
+  { key: "expired", label: "Expired", heading: "Expired", accent: "bg-error", dot: "bg-error" },
+  { key: "expiring", label: "Expiring", heading: "Expiring soon", accent: "bg-warning", dot: "bg-warning" },
+  { key: "active", label: "Active", heading: "Active", accent: "bg-cyan-deep", dot: "bg-cyan-deep" },
+  { key: "new", label: "New", heading: "New members · last 30 days", accent: "bg-link", dot: "bg-link" },
 ];
 
 export default function DashboardPage() {
@@ -75,10 +76,20 @@ export default function DashboardPage() {
   const expired = filtered.filter((m) => m.status === "expired");
   const expiring = filtered.filter((m) => m.status === "expiring");
   const active = filtered.filter((m) => m.status === "active");
+  // "New" is a cross-cutting view: anyone who joined within the last 30 days,
+  // whatever their renewal status. Newest joiners first.
+  const newMembers = filtered
+    .filter((m) => m.isNewMember)
+    .sort((a, b) => new Date(b.joinDate) - new Date(a.joinDate));
   const miaCount = expired.filter((m) => m.miaFlagged).length;
 
-  const counts = { expired: expired.length, expiring: expiring.length, active: active.length };
-  const buckets = { expired, expiring, active };
+  const counts = {
+    expired: expired.length,
+    expiring: expiring.length,
+    active: active.length,
+    new: newMembers.length,
+  };
+  const buckets = { expired, expiring, active, new: newMembers };
   const current = TABS.find((t) => t.key === tab) || TABS[0];
   const currentMembers = buckets[tab];
 
@@ -126,7 +137,7 @@ export default function DashboardPage() {
           <div
             role="tablist"
             aria-label="Filter members by status"
-            className="grid grid-cols-3 gap-2 rounded-lg border border-hairline bg-canvas-soft p-1"
+            className="grid grid-cols-4 gap-1 rounded-lg border border-hairline bg-canvas-soft p-1"
           >
             {TABS.map((t) => {
               const isActive = tab === t.key;
@@ -136,7 +147,7 @@ export default function DashboardPage() {
                   role="tab"
                   aria-selected={isActive}
                   onClick={() => setTab(t.key)}
-                  className={`flex items-center justify-center gap-1.5 rounded-md px-2 py-2 text-xs font-medium tracking-[-0.28px] transition ${
+                  className={`flex items-center justify-center gap-1 rounded-md px-1.5 py-2 text-xs font-medium tracking-[-0.28px] transition ${
                     isActive
                       ? "btn-gradient shadow-[var(--shadow-subtle)]"
                       : "text-body active:bg-canvas"
@@ -187,13 +198,13 @@ export default function DashboardPage() {
           <EmptyState title="No matches" message="Try a different search." />
         ) : (
           <Section
-            title={current.label}
+            title={current.heading}
             accent={current.accent}
             members={currentMembers}
             gymName={gymName}
             onRenew={setRenewing}
             innerRef={tab === "expired" ? expiredRef : undefined}
-            emptyLabel={current.label.toLowerCase()}
+            emptyLabel={tab === "new" ? "new" : current.label.toLowerCase()}
           />
         )}
       </div>
