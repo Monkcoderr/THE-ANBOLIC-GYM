@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { inputCls } from "@/components/ui/form";
 
 const INTERESTS = ["1M", "2M", "3M", "6M", "Other"];
 const SOURCES = [
@@ -137,13 +138,6 @@ export default function LeadForm({ onSubmit, isSubmitting = false }) {
         Save lead
       </button>
     </form>
-  );
-}
-
-function inputCls(error) {
-  return cn(
-    "h-11 w-full rounded-sm border bg-canvas px-3 text-[15px] text-ink outline-none placeholder:text-mute focus:border-primary",
-    error ? "border-error" : "border-hairline"
   );
 }
 

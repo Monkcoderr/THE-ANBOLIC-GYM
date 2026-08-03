@@ -1,5 +1,6 @@
 "use client";
 
+import { memo, useMemo } from "react";
 import Link from "next/link";
 import { Phone, RefreshCw, AlertOctagon, ChevronRight, Sparkles } from "lucide-react";
 import StatusBadge from "@/components/dashboard/StatusBadge";
@@ -20,10 +21,15 @@ function expiryText(member) {
 /**
  * MemberCard — summary card for a member in any list.
  * Props: { member, onRenew, gymName, href }
+ * Memoized (below) so typing in the search box doesn't re-render every card.
  */
-export default function MemberCard({ member, onRenew, gymName, href }) {
+function MemberCard({ member, onRenew, gymName, href }) {
   const canRenew = member.status === "expired" || member.status === "expiring";
-  const reminder = reminderForMember(member, gymName);
+  // Only rebuild the WhatsApp reminder text when the inputs actually change.
+  const reminder = useMemo(
+    () => reminderForMember(member, gymName),
+    [member, gymName]
+  );
 
   const inner = (
     <>
@@ -121,3 +127,5 @@ export default function MemberCard({ member, onRenew, gymName, href }) {
   }
   return <div className={cn(base, miaRing)}>{inner}</div>;
 }
+
+export default memo(MemberCard);

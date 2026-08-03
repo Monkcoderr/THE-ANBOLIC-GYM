@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Phone,
@@ -32,8 +32,9 @@ const SOURCE_LABELS = {
 /**
  * LeadCard — a single lead with convert / info / delete actions.
  * Props: { lead, gymName, onDelete }
+ * Memoized so lead-form / sheet interactions don't re-render the whole list.
  */
-export default function LeadCard({ lead, gymName, onDelete }) {
+function LeadCard({ lead, gymName, onDelete }) {
   const router = useRouter();
   const [confirm, setConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -142,3 +143,5 @@ export default function LeadCard({ lead, gymName, onDelete }) {
     </div>
   );
 }
+
+export default memo(LeadCard);

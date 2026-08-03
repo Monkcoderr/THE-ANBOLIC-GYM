@@ -2,17 +2,17 @@
 
 import useSWR from "swr";
 import { fetcher } from "@/lib/fetcher";
+import { LIST_SWR_CONFIG } from "@/lib/swrConfig";
 
 /**
  * useLeads — fetch unconverted leads.
  */
 export function useLeads() {
-  const { data, error, isLoading, mutate } = useSWR("/api/leads", fetcher, {
-    dedupingInterval: 30000,
-    revalidateOnFocus: false,
-    revalidateOnReconnect: true,
-    keepPreviousData: true,
-  });
+  const { data, error, isLoading, mutate } = useSWR(
+    "/api/leads",
+    fetcher,
+    LIST_SWR_CONFIG
+  );
 
   return {
     leads: data?.leads || [],

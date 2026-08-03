@@ -2,6 +2,7 @@
 
 import useSWR from "swr";
 import { fetcher } from "@/lib/fetcher";
+import { LIST_SWR_CONFIG } from "@/lib/swrConfig";
 
 /**
  * useMembers — fetch the member list, optionally with search/status params.
@@ -14,12 +15,7 @@ export function useMembers(params = {}) {
   if (params.limit) qs.set("limit", String(params.limit));
   const key = `/api/members${qs.toString() ? `?${qs.toString()}` : ""}`;
 
-  const { data, error, isLoading, mutate } = useSWR(key, fetcher, {
-    dedupingInterval: 30000,
-    revalidateOnFocus: false,
-    revalidateOnReconnect: true,
-    keepPreviousData: true,
-  });
+  const { data, error, isLoading, mutate } = useSWR(key, fetcher, LIST_SWR_CONFIG);
 
   return {
     members: data?.members || [],

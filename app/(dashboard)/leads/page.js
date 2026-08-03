@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Plus, UserPlus, Flame } from "lucide-react";
 import TopBar from "@/components/layout/TopBar";
 import LeadCard from "@/components/leads/LeadCard";
@@ -17,8 +17,15 @@ export default function LeadsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
 
-  const hotLeads = leads.filter((l) => (l.hoursOld ?? 0) >= 48);
-  const normalLeads = leads.filter((l) => (l.hoursOld ?? 0) < 48);
+  const { hotLeads, normalLeads } = useMemo(() => {
+    const hot = [];
+    const normal = [];
+    for (const l of leads) {
+      if ((l.hoursOld ?? 0) >= 48) hot.push(l);
+      else normal.push(l);
+    }
+    return { hotLeads: hot, normalLeads: normal };
+  }, [leads]);
 
   async function handleCreate(formData) {
     setIsSubmitting(true);
@@ -44,14 +51,17 @@ export default function LeadsPage() {
     }
   }
 
-  async function handleDelete(id) {
-    try {
-      await fetch(`/api/leads/${id}`, { method: "DELETE" });
-      mutate();
-    } catch {
-      /* ignore */
-    }
-  }
+  const handleDelete = useCallback(
+    async (id) => {
+      try {
+        await fetch(`/api/leads/${id}`, { method: "DELETE" });
+        mutate();
+      } catch {
+        /* ignore */
+      }
+    },
+    [mutate]
+  );
 
   return (
     <>

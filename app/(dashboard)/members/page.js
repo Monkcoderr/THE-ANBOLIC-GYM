@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { Plus, Users, History } from "lucide-react";
 import TopBar from "@/components/layout/TopBar";
@@ -13,12 +12,28 @@ import { useMembers } from "@/hooks/useMembers";
 import { useGym } from "@/components/layout/GymContext";
 
 export default function MembersPage() {
-  const router = useRouter();
   const { gymName } = useGym();
   const [search, setSearch] = useState("");
   const [renewing, setRenewing] = useState(null);
 
-  const { members, isLoading, isError, mutate } = useMembers({ search });
+  // Fetch the full list once (shares SWR cache key with the dashboard) and
+  // filter in memory. This matches the product spec's "client-side filter
+  // array logic" and avoids a debounced API round-trip + regex DB scan on
+  // every keystroke.
+  const { members: allMembers, isLoading, isError, mutate } = useMembers({
+    limit: 1000,
+  });
+
+  const members = useMemo(() => {
+    if (!search) return allMembers;
+    const q = search.toLowerCase();
+    return allMembers.filter(
+      (m) =>
+        m.name.toLowerCase().includes(q) ||
+        m.phone.toLowerCase().includes(q) ||
+        (m.customMemberId && m.customMemberId.toLowerCase().includes(q))
+    );
+  }, [allMembers, search]);
 
   return (
     <>

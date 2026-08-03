@@ -3,7 +3,7 @@ import { connectDB } from "@/lib/mongodb";
 import Member from "@/models/Member";
 import { ok, fail, requireAuth } from "@/lib/apiResponse";
 import { decorateMember, sortMembers } from "@/lib/memberUtils";
-import { computeMemberStatus, addDays, computeInitialExpiry } from "@/lib/dateUtils";
+import { computeMemberStatus, addDays, computeInitialExpiry, startOfDay } from "@/lib/dateUtils";
 import { digitsOnly, normalizeMemberId } from "@/lib/utils";
 import { computeNextMemberId } from "@/lib/memberId";
 
@@ -47,8 +47,15 @@ export async function GET(request) {
       query.$or = [{ name: rx }, { phone: rx }, { customMemberId: rx }];
     }
 
-    const raw = await Member.find(query).lean();
-    let decorated = raw.map(decorateMember);
+    // address/notes are large free-text fields only shown on the member detail
+    // page (its own endpoint returns them) — excluding them here shrinks the
+    // list payload without affecting cards, search, or the renewal flow.
+    const raw = await Member.find(query)
+      .select("-address -notes -__v")
+      .lean();
+    // Compute start-of-today once and share it across the whole batch.
+    const today = startOfDay(new Date());
+    let decorated = raw.map((m) => decorateMember(m, today));
 
     if (["active", "expiring", "expired"].includes(statusFilter)) {
       decorated = decorated.filter((m) => m.status === statusFilter);

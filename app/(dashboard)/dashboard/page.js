@@ -73,23 +73,41 @@ export default function DashboardPage() {
     );
   }, [members, search]);
 
-  const expired = filtered.filter((m) => m.status === "expired");
-  const expiring = filtered.filter((m) => m.status === "expiring");
-  const active = filtered.filter((m) => m.status === "active");
-  // "New" is a cross-cutting view: anyone who joined within the last 30 days,
-  // whatever their renewal status. Newest joiners first.
-  const newMembers = filtered
-    .filter((m) => m.isNewMember)
-    .sort((a, b) => new Date(b.joinDate) - new Date(a.joinDate));
-  const miaCount = expired.filter((m) => m.miaFlagged).length;
+  // Derive status buckets + counts once per filtered-list change instead of
+  // on every render (e.g. each search keystroke re-runs the parent render).
+  const { buckets, counts, miaCount } = useMemo(() => {
+    const expired = [];
+    const expiring = [];
+    const active = [];
+    const newMembers = [];
+    let mia = 0;
+    for (const m of filtered) {
+      if (m.status === "expired") {
+        expired.push(m);
+        if (m.miaFlagged) mia += 1;
+      } else if (m.status === "expiring") {
+        expiring.push(m);
+      } else {
+        active.push(m);
+      }
+      // "New" is a cross-cutting view: anyone who joined within the last 30
+      // days, whatever their renewal status.
+      if (m.isNewMember) newMembers.push(m);
+    }
+    // Newest joiners first.
+    newMembers.sort((a, b) => new Date(b.joinDate) - new Date(a.joinDate));
+    return {
+      buckets: { expired, expiring, active, new: newMembers },
+      counts: {
+        expired: expired.length,
+        expiring: expiring.length,
+        active: active.length,
+        new: newMembers.length,
+      },
+      miaCount: mia,
+    };
+  }, [filtered]);
 
-  const counts = {
-    expired: expired.length,
-    expiring: expiring.length,
-    active: active.length,
-    new: newMembers.length,
-  };
-  const buckets = { expired, expiring, active, new: newMembers };
   const current = TABS.find((t) => t.key === tab) || TABS[0];
   const currentMembers = buckets[tab];
 

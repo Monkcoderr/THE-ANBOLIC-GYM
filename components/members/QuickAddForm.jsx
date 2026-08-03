@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { computeMemberStatus, formatDisplayDate } from "@/lib/dateUtils";
 import { cn } from "@/lib/utils";
+import { Field, inputCls } from "@/components/ui/form";
 
 const LENGTH_PRESETS = [
   { label: "1 Month", days: 30 },
@@ -157,22 +158,5 @@ export default function QuickAddForm({ onSubmit, isSubmitting = false }) {
         Save &amp; add another
       </button>
     </form>
-  );
-}
-
-function Field({ label, error, children }) {
-  return (
-    <div>
-      <label className="mb-1.5 block text-sm font-medium text-ink">{label}</label>
-      {children}
-      {error && <p className="mt-1.5 text-sm text-error">{error}</p>}
-    </div>
-  );
-}
-
-function inputCls(error) {
-  return cn(
-    "h-11 w-full rounded-sm border bg-canvas px-3 text-[15px] text-ink outline-none placeholder:text-mute focus:border-primary",
-    error ? "border-error" : "border-hairline"
   );
 }
