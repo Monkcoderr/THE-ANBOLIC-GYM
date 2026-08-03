@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { computeInitialExpiry, formatDisplayDate } from "@/lib/dateUtils";
 import { cn } from "@/lib/utils";
@@ -37,7 +37,9 @@ function ordinalDay(isoDate) {
 
 /**
  * MemberForm — create/edit a member.
- * Props: { initialData, onSubmit, isSubmitting, submitLabel, lockPlanFields, editJoinDate }
+ * Props: { initialData, onSubmit, isSubmitting, submitLabel, lockPlanFields, editJoinDate, autoGenerateId }
+ * When autoGenerateId is true (new-member flow), the Member ID field is
+ * prefilled with the next sequential ID from the server and can be overridden.
  */
 export default function MemberForm({
   initialData = {},
@@ -46,12 +48,41 @@ export default function MemberForm({
   submitLabel = "Save member",
   lockPlanFields = false,
   editJoinDate = false,
+  autoGenerateId = false,
 }) {
   const [name, setName] = useState(initialData.name || "");
   const [phone, setPhone] = useState(initialData.phone || "");
   const [customMemberId, setCustomMemberId] = useState(
     initialData.customMemberId || ""
   );
+  // Server-suggested next ID (auto-generate flow only). Tracked so we can tell
+  // the API whether the admin kept the suggestion or typed their own value.
+  const [suggestedId, setSuggestedId] = useState("");
+  const [idLoading, setIdLoading] = useState(false);
+
+  useEffect(() => {
+    // Only for brand-new members that don't already carry an ID.
+    if (!autoGenerateId || initialData.customMemberId) return;
+    let cancelled = false;
+    setIdLoading(true);
+    fetch("/api/members/next-id")
+      .then((r) => r.json())
+      .then((json) => {
+        if (cancelled || !json?.success) return;
+        const nextId = json.data?.nextId || "";
+        setSuggestedId(nextId);
+        // Prefill only if the admin hasn't already started typing an ID.
+        setCustomMemberId((cur) => (cur ? cur : nextId));
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setIdLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoGenerateId]);
   const [planDurationDays, setPlanDurationDays] = useState(
     initialData.planDurationDays || 30
   );
@@ -103,6 +134,12 @@ export default function MemberForm({
       name: name.trim(),
       phone: phone.replace(/\D/g, ""),
       customMemberId: customMemberId.trim(),
+      // True when the admin kept the server-suggested ID unedited, so the API
+      // may safely auto-advance the number on a concurrent collision.
+      autoAssignId:
+        autoGenerateId &&
+        suggestedId !== "" &&
+        customMemberId.trim() === suggestedId,
       planDurationDays: effectiveDuration,
       planStartDate,
       address: address.trim(),
@@ -143,17 +180,22 @@ export default function MemberForm({
         </div>
       </Field>
 
-      <Field label="Member ID (optional)" error={errors.customMemberId}>
+      <Field
+        label={autoGenerateId ? "Member ID" : "Member ID (optional)"}
+        error={errors.customMemberId}
+      >
         <input
           type="text"
           value={customMemberId}
           onChange={(e) => setCustomMemberId(e.target.value)}
-          placeholder="e.g. GYM-001"
+          placeholder={idLoading ? "Generating…" : "e.g. GYM-001"}
           autoCapitalize="characters"
           className={inputCls(errors.customMemberId)}
         />
         <p className="mt-1.5 text-xs text-mute">
-          A unique ID for this member. Shown on their card and searchable.
+          {autoGenerateId
+            ? "Auto-filled with the next available ID. Edit if needed — it must be unique."
+            : "A unique ID for this member. Shown on their card and searchable."}
         </p>
       </Field>
 

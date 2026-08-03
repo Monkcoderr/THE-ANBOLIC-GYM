@@ -76,6 +76,7 @@ function NewMemberInner() {
           onSubmit={handleSubmit}
           isSubmitting={isSubmitting}
           submitLabel="Create member"
+          autoGenerateId
         />
       </div>
     </>
