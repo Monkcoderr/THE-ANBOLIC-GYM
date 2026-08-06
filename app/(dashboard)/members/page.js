@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { Plus, Users, History } from "lucide-react";
+import { Plus, Users, History, Trash2 } from "lucide-react";
 import TopBar from "@/components/layout/TopBar";
 import SearchBar from "@/components/dashboard/SearchBar";
 import MemberCard from "@/components/dashboard/MemberCard";
@@ -56,6 +56,14 @@ export default function MembersPage() {
         >
           <History className="h-4 w-4" aria-hidden="true" />
           Add old members (by expiry)
+        </Link>
+
+        <Link
+          href="/members/deleted"
+          className="flex h-11 w-full items-center justify-center gap-2 rounded-pill border border-hairline bg-canvas text-sm font-medium text-body transition hover:bg-canvas-soft-2 active:scale-[0.98]"
+        >
+          <Trash2 className="h-4 w-4" aria-hidden="true" />
+          Recently deleted
         </Link>
 
         {isLoading ? (

@@ -184,7 +184,7 @@ export default function MemberDetailPage({ params }) {
       <ConfirmDialog
         open={confirmDelete}
         title="Delete member?"
-        message={`This removes ${member?.name || "this member"} from your lists. Payment history is preserved. This can't be undone here.`}
+        message={`This removes ${member?.name || "this member"} from your lists. Payment history is preserved, and you can restore them anytime from Members → Recently deleted.`}
         confirmLabel="Delete"
         loading={deleting}
         onConfirm={handleDelete}
