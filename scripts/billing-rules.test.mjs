@@ -20,6 +20,7 @@ import {
   deriveBillingMonths,
   durationToMonths,
   getBillingMonthsPaid,
+  nextBillingExpiry,
   utcDateOnly,
 } from "../lib/dateUtils.js";
 
@@ -246,24 +247,156 @@ test("no business-date write uses local startOfDay", () => {
   }
 });
 
-/* ── Lapsed members: a month paid is a month received ─────────────────────── */
+/* ── THE FINALIZED RENEWAL RULE ────────────────────────────────────────────
+ *
+ * The joining date fixes the billing day for life. The payment date is a
+ * transaction date and nothing more: it may never become the billing anchor,
+ * and it may never move the billing day. The next expiry always follows the
+ * member's existing cycle.
+ *
+ * One exception: if the calculated expiry has already passed by the time the
+ * member pays, advance by whole billing cycles until it is in the future. The
+ * billing DAY still never moves.
+ * ─────────────────────────────────────────────────────────────────────────── */
 
-test("a lapsed member's new period starts today, not at the old expiry", () => {
-  // Paid up to 10-Mar, disappears, comes back on 08-Aug and buys one month.
-  // Advancing from the old expiry would land on 10-Aug — two days for a month.
-  const join = d("2026-01-10");
-  const next = computeRenewalExpiry(join, d("2026-03-10"), 30, d("2026-08-08"));
-  assert.equal(s(next), "10-Sep-2026");
-  // Still exactly on the billing day, still derivable from the joining date.
-  assert.equal(deriveBillingMonths(join, next), 8);
+test("early, on-time and late payments all produce the same next expiry", () => {
+  // Joined 05/06, currently expires 05/07 — billing day is the 5th, forever.
+  const join = d("2026-06-05");
+  const expiry = d("2026-07-05");
+  const paydays = {
+    "early    29/06": "2026-06-29",
+    "on time  05/07": "2026-07-05",
+    "late     15/07": "2026-07-15",
+  };
+  for (const [label, payday] of Object.entries(paydays)) {
+    assert.equal(
+      s(computeRenewalExpiry(join, expiry, 30, d(payday))),
+      "05-Aug-2026",
+      `${label} must give 05-Aug-2026`
+    );
+  }
 });
 
-test("a lapsed member buying a longer plan gets the whole plan", () => {
+test("a late payment inside the cycle keeps the billing day and costs the member days", () => {
+  // Billing day 20, expired 20/07, pays 08/08 → 20/08. The member knowingly
+  // receives only 08/08–20/08; paying late is not rewarded with a fresh month.
+  const next = computeRenewalExpiry(d("2026-06-20"), d("2026-07-20"), 30, d("2026-08-08"));
+  assert.equal(s(next), "20-Aug-2026");
+});
+
+test("a very late payment advances whole cycles until the expiry is in the future", () => {
+  // Billing day 01, expired 01/07, pays 08/08. The rule gives 01/08, which has
+  // already passed, so it advances exactly one cycle to 01/09 — never to 08/09.
+  const next = computeRenewalExpiry(d("2026-06-01"), d("2026-07-01"), 30, d("2026-08-08"));
+  assert.equal(s(next), "01-Sep-2026");
+});
+
+test("an extremely late payment still lands on the billing day", () => {
+  // Same member paying on 01/12: cycles advance 01/08 → … → 01/12, and because
+  // an expiry equal to the payment date is worth nothing, on to 01/01.
+  const next = computeRenewalExpiry(d("2026-06-01"), d("2026-07-01"), 30, d("2026-12-01"));
+  assert.equal(s(next), "01-Jan-2027");
+  assert.equal(utcDateOnly(next).getUTCDate(), 1, "billing day must still be the 1st");
+});
+
+test("the payment date can never become the billing day", () => {
+  const join = d("2026-06-05");
+  const expiry = d("2026-07-05");
+  const forbidden = [
+    ["2026-07-15", "15-Aug-2026"],
+    ["2026-07-15", "15-Sep-2026"],
+    ["2026-06-29", "29-Jul-2026"],
+    ["2026-06-29", "29-Aug-2026"],
+  ];
+  for (const [payday, banned] of forbidden) {
+    const next = computeRenewalExpiry(join, expiry, 30, d(payday));
+    assert.notEqual(s(next), banned, `paying ${payday} must never produce ${banned}`);
+    assert.equal(
+      utcDateOnly(next).getUTCDate(),
+      5,
+      `paying ${payday} must leave the billing day on the 5th, got ${s(next)}`
+    );
+  }
+});
+
+test("the billing-day calculation cannot see a clock", () => {
+  // Structural guarantee: nextBillingExpiry takes no payment date and no `now`,
+  // so no clock value can reach the anchor arithmetic.
+  assert.equal(
+    nextBillingExpiry.length,
+    3,
+    "nextBillingExpiry must accept exactly (joinDate, currentExpiry, planDurationDays)"
+  );
+  assert.equal(s(nextBillingExpiry(d("2026-06-05"), d("2026-07-05"), 30)), "05-Aug-2026");
+  assert.equal(s(nextBillingExpiry(d("2026-08-23"), d("2026-09-23"), 30)), "23-Oct-2026");
+  assert.equal(s(nextBillingExpiry(d("2026-06-05"), d("2026-06-05"), 90)), "05-Sep-2026");
+});
+
+test("the result is identical for every payment date within the cycle", () => {
+  // Whenever the rule's answer is already in the future, `now` is irrelevant —
+  // 40 different payment dates spanning six weeks must agree exactly.
+  const join = d("2026-08-23");
+  const expiry = d("2026-09-23");
+  const answers = new Set();
+  for (let i = 0; i < 40; i++) {
+    const payday = new Date(Date.UTC(2026, 8, 1 + i));
+    answers.add(s(computeRenewalExpiry(join, expiry, 30, payday)));
+  }
+  assert.deepEqual([...answers], ["23-Oct-2026"], `got ${[...answers].join(", ")}`);
+});
+
+test("multiple renewals preserve the original billing day forever", () => {
+  // Billing day 5. Every payment lands on a deliberately different day.
+  const join = d("2026-06-05");
+  let expiry = d("2026-07-05");
+  const paydays = ["2026-06-29", "2026-08-01", "2026-09-05", "2026-10-10", "2026-11-30"];
+  const chain = [s(expiry)];
+  for (const payday of paydays) {
+    expiry = computeRenewalExpiry(join, expiry, 30, d(payday));
+    chain.push(s(expiry));
+  }
+  assert.deepEqual(chain, [
+    "05-Jul-2026",
+    "05-Aug-2026",
+    "05-Sep-2026",
+    "05-Oct-2026",
+    "05-Nov-2026",
+    "05-Dec-2026",
+  ]);
+});
+
+test("multi-month plans follow the same billing anchor", () => {
+  const join = d("2026-06-05");
+  assert.equal(s(nextBillingExpiry(join, d("2026-06-05"), 90)), "05-Sep-2026");
+  assert.equal(s(nextBillingExpiry(join, d("2026-09-05"), 90)), "05-Dec-2026");
+  assert.equal(s(nextBillingExpiry(join, d("2026-06-05"), 365)), "05-Jun-2027");
+  // A late payer on a 3-month plan advances by whole 3-month cycles.
+  assert.equal(
+    s(computeRenewalExpiry(join, d("2026-03-05"), 90, d("2026-08-08"))),
+    "05-Sep-2026"
+  );
+});
+
+/* ── Lapsed members ───────────────────────────────────────────────────────── */
+
+test("a lapsed member's expiry advances by whole cycles, never from the payment date", () => {
+  // Paid up to 10-Mar, returns on 08-Aug and buys one month. The rule walks
+  // 10-Apr … 10-Aug; 10-Aug is the first date after the payment date.
+  const join = d("2026-01-10");
+  const next = computeRenewalExpiry(join, d("2026-03-10"), 30, d("2026-08-08"));
+  assert.equal(s(next), "10-Aug-2026");
+  assert.equal(utcDateOnly(next).getUTCDate(), 10, "billing day must still be the 10th");
+  assert.equal(deriveBillingMonths(join, next), 7);
+});
+
+test("a lapsed member on a longer plan advances by that plan's cycle length", () => {
   const join = d("2026-01-10");
   const lapsed = d("2026-03-10");
   const today = d("2026-08-08");
-  assert.equal(s(computeRenewalExpiry(join, lapsed, 90, today)), "10-Nov-2026");
-  assert.equal(s(computeRenewalExpiry(join, lapsed, 365, today)), "10-Aug-2027");
+  // 3-month cycles: 10-Jun is past, 10-Sep is the first future date.
+  assert.equal(s(computeRenewalExpiry(join, lapsed, 90, today)), "10-Sep-2026");
+  // A 12-month cycle clears the payment date on the first step.
+  assert.equal(s(computeRenewalExpiry(join, lapsed, 365, today)), "10-Mar-2027");
 });
 
 test("a member who lapsed less than a month keeps their billing day", () => {
@@ -284,13 +417,13 @@ test("an expiry that drifted off the billing day is pulled back into line", () =
   assert.equal(deriveBillingMonths(join, next), 2);
 });
 
-test("a drifted expiry is corrected by at most half a month, never a whole one", () => {
-  // Billing day 1st, expiry drifted to 28-Feb. Snapping to the first billing
-  // date after the base would give 01-Mar — one day for a month's payment.
-  // The nearest billing date to the paid-for 28-Mar is 01-Apr.
+test("a drifted expiry is realigned to the billing day, not extended", () => {
+  // Billing day 1st, expiry drifted forward to 28-Feb — the member already
+  // holds 27 days they were not billed for. The renewal returns them to the
+  // 1st; it must not hand them a further whole month on top.
   const next = computeRenewalExpiry(d("2026-01-01"), d("2026-02-28"), 30, d("2026-02-20"));
-  assert.equal(s(next), "01-Apr-2026");
-  assert.ok(next > d("2026-02-28"));
+  assert.equal(s(next), "01-Mar-2026");
+  assert.ok(next > d("2026-02-28"), "a renewal must always add time");
 });
 
 /* ── Billing months are derived, never stored ─────────────────────────────── */

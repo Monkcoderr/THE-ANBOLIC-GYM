@@ -24,6 +24,12 @@
  *   TIMESTAMPED the joining date carries a time component instead of being a
  *               clean date-only value, which is how the old auto-stamped dates
  *               are recognised.
+ *
+ * It also checks every member's next renewal against the structural invariants
+ * of the billing policy (scripts/renewal-invariants.mjs). Coverage LENGTH is
+ * never a warning: a late payer receiving only a few usable days is an
+ * intentional consequence of the fixed billing day, so those records are listed
+ * for information and excluded from the violation count.
  */
 
 import mongoose from "mongoose";
@@ -37,6 +43,7 @@ import {
   isUtcDateOnly,
   utcDateOnly,
 } from "../lib/dateUtils.js";
+import { checkRenewalInvariants, INVARIANTS } from "./renewal-invariants.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 try {
@@ -120,13 +127,13 @@ function table(title, list) {
   console.log(`\n── ${title} (${list.length}) ${"─".repeat(Math.max(0, 72 - title.length))}`);
   console.log(
     `${pad("ID", 7)}${pad("NAME", 22)}${pad("JOINED", 13)}${pad("EXPIRY", 13)}` +
-      `${"PAID".padStart(5)}  ${pad("NEXT RENEWAL", 13)}${"+DAYS".padStart(6)}  FLAGS`
+      `${"PAID".padStart(5)}  ${pad("NEXT RENEWAL", 13)}${"USABLE".padStart(7)}  FLAGS`
   );
   for (const r of list) {
     console.log(
       `${pad(r.id, 7)}${pad(r.name, 22)}${pad(f(r.join), 13)}${pad(f(r.expiry), 13)}` +
         `${String(r.monthsPaid ?? "—").padStart(4)}m  ${pad(f(r.next), 13)}` +
-        `${String(r.grantedDays ?? "—").padStart(6)}  ${r.flags.join("+") || "ok"}`
+        `${String(r.grantedDays ?? "—").padStart(7)}  ${r.flags.join("+") || "ok"}`
     );
   }
 }
@@ -135,17 +142,53 @@ table("OFF-ANCHOR / NO-JOIN — the next renewal will realign these", problems);
 if (SHOW_ALL) table("ON-ANCHOR", clean);
 else console.log(`\n${clean.length} members sit exactly on their billing day (--all to list).`);
 
-// A renewal must always add time, and a one-month renewal should grant roughly
-// a month. Anything outside 16–46 days means a record needs a human look.
-const suspicious = rows.filter(
-  (r) => r.grantedDays !== null && (r.grantedDays < 16 || r.grantedDays > 46)
-);
+// Renewal correctness. Coverage LENGTH is deliberately not a warning: under the
+// finalized billing policy a late payer receives fewer usable days, and that is
+// intentional, not an anomaly. What gets flagged is a renewal that breaks the
+// structure of the rule — see scripts/renewal-invariants.mjs.
+const broken = [];
+for (const r of rows) {
+  if (!r.join || !r.expiry) continue;
+  const check = checkRenewalInvariants(
+    { joinDate: r.join, planEndDate: r.expiry },
+    { planDurationDays: 30 }
+  );
+  r.coverageDays = check.coverageDays;
+  r.cyclesAdvanced = check.cyclesAdvanced;
+  if (check.violations.length) broken.push({ ...r, violations: check.violations });
+}
+
 console.log(
-  `\nOne-month renewals granting an unusual number of days: ${suspicious.length}` +
-    (suspicious.length
-      ? `\n${suspicious.map((r) => `  ${r.id} ${r.name} → +${r.grantedDays}d`).join("\n")}`
-      : " (none — every renewal grants 16–46 days)")
+  `\nRenewal-rule violations: ${broken.length}` +
+    (broken.length
+      ? `\n${broken
+          .map(
+            (r) =>
+              `  ${r.id} ${r.name} → ${r.violations
+                .map((v) => `${v} (${INVARIANTS[v]})`)
+                .join(", ")}`
+          )
+          .join("\n")}`
+      : " (none — every renewal adds time, lands in the future on the billing day," +
+        "\n                         and advances no further than the catch-up rule allows)")
 );
+
+// Informational: how much usable membership today's renewal would grant. Short
+// figures are correct for late payers and are NOT errors.
+const withCoverage = rows.filter((r) => r.coverageDays != null);
+const short = withCoverage
+  .filter((r) => r.coverageDays < 16)
+  .sort((a, b) => a.coverageDays - b.coverageDays);
+console.log(
+  `\nFor information — late payers who would get under 16 days: ${short.length}` +
+    " (intentional, not errors)"
+);
+for (const r of short)
+  console.log(
+    `  ${pad(r.id, 7)}${pad(r.name, 22)} expiry ${f(r.expiry)} → ${f(r.next)}` +
+      `  ${String(r.coverageDays).padStart(3)}d usable` +
+      (r.cyclesAdvanced ? `  (+${r.cyclesAdvanced} cycle caught up)` : "")
+  );
 console.log();
 
 await mongoose.disconnect();
