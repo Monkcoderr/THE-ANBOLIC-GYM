@@ -7,6 +7,7 @@ import {
   computeMemberStatus,
   computeInitialExpiry,
   computeJoinDateFromExpiry,
+  utcDateOnly,
   startOfDay,
 } from "@/lib/dateUtils";
 import { digitsOnly, normalizeMemberId } from "@/lib/utils";
@@ -14,24 +15,31 @@ import { computeNextMemberId } from "@/lib/memberId";
 
 export const dynamic = "force-dynamic";
 
-const CreateSchema = z.object({
-  name: z.string().trim().min(1, "Name is required"),
-  phone: z.string().min(10, "Phone must be at least 10 digits"),
-  customMemberId: z.string().trim().max(40, "ID is too long").optional(),
-  // Set by the client when customMemberId holds the server-suggested value the
-  // admin left unedited — lets the server safely retry on a concurrent clash.
-  autoAssignId: z.boolean().optional(),
-  planDurationDays: z.coerce
-    .number()
-    .int()
-    .positive("Plan duration must be positive"),
-  planStartDate: z.coerce.date().optional(),
-  // When provided, the member is created working BACKWARDS from this expiry
-  // (used for migrating existing/old members). planStartDate is derived.
-  planEndDate: z.coerce.date().optional(),
-  address: z.string().optional(),
-  notes: z.string().optional(),
-});
+const CreateSchema = z
+  .object({
+    name: z.string().trim().min(1, "Name is required"),
+    phone: z.string().min(10, "Phone must be at least 10 digits"),
+    customMemberId: z.string().trim().max(40, "ID is too long").optional(),
+    // Set by the client when customMemberId holds the server-suggested value the
+    // admin left unedited — lets the server safely retry on a concurrent clash.
+    autoAssignId: z.boolean().optional(),
+    planDurationDays: z.coerce
+      .number()
+      .int()
+      .positive("Plan duration must be positive"),
+    // The joining date. Required for a new signup — never defaulted to today,
+    // because a silently invented joining date corrupts the billing day.
+    planStartDate: z.coerce.date().optional(),
+    // When provided, the member is created working BACKWARDS from this expiry
+    // (used for migrating existing/old members). planStartDate is derived.
+    planEndDate: z.coerce.date().optional(),
+    address: z.string().optional(),
+    notes: z.string().optional(),
+  })
+  .refine((v) => Boolean(v.planStartDate || v.planEndDate), {
+    message: "Joining date is required",
+    path: ["planStartDate"],
+  });
 
 // GET /api/members — list with search/status filter + pagination.
 export async function GET(request) {
@@ -107,20 +115,27 @@ export async function POST(request) {
     //  • Backwards (migrating an old member): known expiry + plan length →
     //    derive the joining date so the record stays internally consistent.
     // Both modes end up with the joining day equal to the expiry day, which is
-    // the invariant every future renewal depends on.
+    // the invariant every future renewal depends on. Every stored value goes
+    // through utcDateOnly so it is a clean date-only value at UTC midnight.
     let planStartDate;
     let planEndDate;
     let joinDate;
     if (parsed.data.planEndDate) {
-      planEndDate = parsed.data.planEndDate;
+      planEndDate = utcDateOnly(parsed.data.planEndDate);
       // Whole calendar months back, not a raw day count — subtracting 30 days
       // from a 31-day month would land on a different day of the month and
       // permanently offset the member's billing day.
+      //
+      // NOTE: this is the quick-add path for existing members, where the admin
+      // knows the current expiry but not necessarily the original joining date.
+      // The joining date is DERIVED from the expiry rather than invented from
+      // today's date, so the billing day is correct by construction.
       planStartDate = computeJoinDateFromExpiry(planEndDate, planDurationDays);
       // Backdate joinDate so migrated members don't pollute "new this month".
       joinDate = planStartDate;
     } else {
-      planStartDate = parsed.data.planStartDate || new Date();
+      // Guaranteed present by the schema refinement — never defaulted to today.
+      planStartDate = utcDateOnly(parsed.data.planStartDate);
       // The joining date IS the start date for a new signup, and the expiry is
       // always the same day-of-month, N calendar months later.
       planEndDate = computeInitialExpiry(planStartDate, planDurationDays);

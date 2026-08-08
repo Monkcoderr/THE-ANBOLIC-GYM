@@ -29,9 +29,10 @@ export default function RenewalModal({ member, gymName, onSuccess, onClose }) {
 
   const newExpiry = useMemo(() => {
     if (!effectiveDuration || effectiveDuration <= 0) return null;
-    // Anchor to the joining day-of-month — the renewal day never shifts with
-    // the payment date. Falls back to plan start / current expiry for legacy
-    // members that predate a stored joining date.
+    // The exact calculation the renew API performs, so the date previewed here
+    // is the date that gets stored. Anchored to the joining day-of-month, so
+    // the renewal day never shifts with the payment date. Falls back to plan
+    // start / current expiry for legacy members with no stored joining date.
     const anchor = member.joinDate || member.planStartDate || member.planEndDate;
     return computeRenewalExpiry(anchor, member.planEndDate, effectiveDuration);
   }, [effectiveDuration, member.joinDate, member.planStartDate, member.planEndDate]);

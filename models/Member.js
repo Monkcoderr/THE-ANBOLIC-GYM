@@ -22,7 +22,13 @@ const MemberSchema = new mongoose.Schema(
     notes: { type: String, default: "" },
     miaFlagged: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false },
-    joinDate: { type: Date, default: Date.now },
+    // The authoritative joining date and the member's permanent billing day.
+    // Deliberately has NO default: it must always be an explicit business fact.
+    // It previously defaulted to Date.now, which silently replaced the joining
+    // date the admin typed with the day the record happened to be created, and
+    // corrupted the billing day of 84 members. Renewals must never write it —
+    // only an explicit admin edit may change it.
+    joinDate: { type: Date, required: true },
   },
   { timestamps: true }
 );

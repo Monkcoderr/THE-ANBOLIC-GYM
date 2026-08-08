@@ -44,10 +44,6 @@ import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join as pathJoin } from "node:path";
 import {
-  addMonths,
-  setDate,
-  getDate,
-  getDaysInMonth,
   startOfDay,
   addDays,
   subDays,
@@ -86,37 +82,17 @@ if (rollbackIdx !== -1 && !ROLLBACK_FILE) {
   process.exit(1);
 }
 
-// ── Billing maths (mirrors lib/dateUtils.js exactly) ──────────────────────
-/**
- * Normalise to a DATE-ONLY value stored at UTC midnight, which is the
- * convention every date in this database already follows (the app runs on a
- * UTC server, where local midnight IS UTC midnight).
- *
- * This must be applied to everything the migration writes. Using date-fns'
- * startOfDay here instead would store local midnight — on an IST machine that
- * is 18:30 UTC the PREVIOUS day, so the production server would render every
- * migrated date one day early and read the wrong billing day off it.
- */
-const utcDateOnly = (date) => {
-  const d = new Date(date);
-  return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-};
-/** True when a stored value is already a clean UTC-midnight date-only value. */
-const isUtcDateOnly = (date) =>
-  date instanceof Date && date.getTime() === utcDateOnly(date).getTime();
+// ── Billing maths ─────────────────────────────────────────────────────────
+// Imported from the SAME module the application uses, so the migration can
+// never drift from production behaviour. (Node reparses this ESM .js file
+// automatically; verified working.)
+import {
+  computeExpiryFromJoin,
+  durationToMonths,
+  utcDateOnly,
+  isUtcDateOnly,
+} from "../lib/dateUtils.js";
 
-const applyAnchorDay = (date, anchorDay) => {
-  const d = new Date(date);
-  return setDate(d, Math.min(anchorDay, getDaysInMonth(d)));
-};
-const durationToMonths = (days) => Math.max(1, Math.round((Number(days) || 0) / 30));
-const computeExpiryFromJoin = (joinDate, totalMonths) => {
-  const j = new Date(joinDate);
-  return applyAnchorDay(
-    addMonths(j, Math.max(0, Math.round(Number(totalMonths) || 0))),
-    getDate(j)
-  );
-};
 const computeMemberStatus = (planEndDate, today) => {
   const end = new Date(planEndDate);
   if (end < today) return "expired";

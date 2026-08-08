@@ -7,17 +7,34 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join as pathJoin } from "node:path";
 import { format } from "date-fns";
 import {
   computeExpiryFromJoin,
   computeInitialExpiry,
   computeJoinDateFromExpiry,
   computeRenewalExpiry,
+  deriveBillingMonths,
   durationToMonths,
+  getBillingMonthsPaid,
+  utcDateOnly,
 } from "../lib/dateUtils.js";
 
-const d = (iso) => new Date(`${iso}T00:00:00`);
-const s = (date) => format(date, "dd-MMM-yyyy");
+const ROOT = pathJoin(dirname(fileURLToPath(import.meta.url)), "..");
+// Business dates enter the app as "YYYY-MM-DD" strings, which JS parses as UTC
+// midnight — so the tests build their inputs the same way the API receives them.
+const d = (iso) => new Date(`${iso}T00:00:00.000Z`);
+const utc = d;
+// Rendered from UTC fields so every assertion reads the calendar day the app
+// actually stores, on any machine in any timezone.
+const MONTHS = "Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split(" ");
+const s = (date) => {
+  const x = utcDateOnly(date);
+  return `${String(x.getUTCDate()).padStart(2, "0")}-${MONTHS[x.getUTCMonth()]}-${x.getUTCFullYear()}`;
+};
 
 test("expiry is exactly one calendar month after the joining date", () => {
   // The four acceptance rules, written as dd/mm.
@@ -121,4 +138,268 @@ test("Ranjeet Singh's case: joined 06-Jul, 2 months paid, expiry 06-Sep", () => 
   const renewed = computeRenewalExpiry(join, initial, 30, d("2026-08-08"));
   assert.equal(s(renewed), "06-Sep-2026");
   assert.equal(s(computeExpiryFromJoin(join, 2)), "06-Sep-2026");
+});
+
+/* ── Date storage: date-only values at UTC midnight ───────────────────────── */
+
+test("utcDateOnly strips the time and keeps the UTC calendar day", () => {
+  // Already UTC midnight — unchanged.
+  assert.equal(utcDateOnly(utc("2026-07-06")).toISOString(), "2026-07-06T00:00:00.000Z");
+  // A real timestamp mid-day — time stripped, day kept.
+  assert.equal(
+    utcDateOnly(new Date("2026-07-23T14:02:11.329Z")).toISOString(),
+    "2026-07-23T00:00:00.000Z"
+  );
+  // The form input path: a bare "YYYY-MM-DD" string, exactly what z.coerce.date()
+  // produces from the member form and quick-add form.
+  assert.equal(utcDateOnly(new Date("2026-07-06")).toISOString(), "2026-07-06T00:00:00.000Z");
+  // Late-in-day UTC timestamps must not roll over to the next day.
+  assert.equal(
+    utcDateOnly(new Date("2026-07-06T23:59:59.999Z")).toISOString(),
+    "2026-07-06T00:00:00.000Z"
+  );
+});
+
+test("utcDateOnly is idempotent", () => {
+  const once = utcDateOnly(d("2026-07-06"));
+  const twice = utcDateOnly(once);
+  assert.equal(once.getTime(), twice.getTime());
+});
+
+test("expiry derived from a UTC-midnight joining date is itself UTC midnight", () => {
+  for (const months of [1, 2, 3, 6, 12]) {
+    const out = computeExpiryFromJoin(utc("2026-07-06"), months);
+    assert.equal(
+      utcDateOnly(out).toISOString(),
+      out.toISOString(),
+      `${months}m result must already be UTC midnight, got ${out.toISOString()}`
+    );
+  }
+});
+
+test("the billing rule is timezone independent", () => {
+  // The same joining date must yield the same expiry regardless of the
+  // machine's timezone. Run the real module in child processes under
+  // deliberately extreme zones (UTC+14, UTC-11, IST, UTC).
+  const script =
+    "import('./lib/dateUtils.js').then(({computeExpiryFromJoin,utcDateOnly})=>" +
+    "console.log(utcDateOnly(computeExpiryFromJoin(new Date('2026-07-06T00:00:00.000Z'),1)).toISOString()))";
+  const results = {};
+  for (const tz of ["UTC", "Asia/Kolkata", "Pacific/Kiritimati", "Pacific/Niue"]) {
+    results[tz] = execFileSync(process.execPath, ["-e", script], {
+      cwd: ROOT,
+      env: { ...process.env, TZ: tz },
+      encoding: "utf8",
+    }).trim();
+  }
+  const unique = [...new Set(Object.values(results))];
+  assert.equal(
+    unique.length,
+    1,
+    `expected one answer across all timezones, got ${JSON.stringify(results)}`
+  );
+  assert.equal(unique[0], "2026-08-06T00:00:00.000Z");
+});
+
+/* ── Guards against the specific regressions that caused this incident ────── */
+
+test("a business date is never silently defaulted to the current date", () => {
+  const model = readFileSync(pathJoin(ROOT, "models/Member.js"), "utf8");
+  assert.doesNotMatch(
+    model,
+    /joinDate:\s*\{[^}]*default:\s*Date\.now/,
+    "joinDate must not default to Date.now — that discards the real joining date"
+  );
+  const createRoute = readFileSync(pathJoin(ROOT, "app/api/members/route.js"), "utf8");
+  assert.doesNotMatch(
+    createRoute,
+    /planStartDate\s*=\s*parsed\.data\.planStartDate\s*\|\|\s*new Date\(\)/,
+    "the create route must require an explicit joining date"
+  );
+});
+
+test("the renewal route never writes joinDate", () => {
+  const renewRoute = readFileSync(
+    pathJoin(ROOT, "app/api/members/renew/[id]/route.js"),
+    "utf8"
+  );
+  assert.doesNotMatch(
+    renewRoute,
+    /member\.joinDate\s*=/,
+    "renewals must never overwrite the authoritative joining date"
+  );
+});
+
+test("no business-date write uses local startOfDay", () => {
+  // startOfDay is fine for 'is this member expired today' comparisons, but must
+  // never be used to build a value that gets stored.
+  for (const file of [
+    "app/api/members/route.js",
+    "app/api/members/renew/[id]/route.js",
+    "app/api/members/[id]/route.js",
+  ]) {
+    const src = readFileSync(pathJoin(ROOT, file), "utf8");
+    const offenders = src
+      .split("\n")
+      .filter((l) => /(?:joinDate|planStartDate|planEndDate)\s*[:=][^=].*startOfDay/.test(l));
+    assert.deepEqual(offenders, [], `${file} stores a local startOfDay value`);
+  }
+});
+
+/* ── Lapsed members: a month paid is a month received ─────────────────────── */
+
+test("a lapsed member's new period starts today, not at the old expiry", () => {
+  // Paid up to 10-Mar, disappears, comes back on 08-Aug and buys one month.
+  // Advancing from the old expiry would land on 10-Aug — two days for a month.
+  const join = d("2026-01-10");
+  const next = computeRenewalExpiry(join, d("2026-03-10"), 30, d("2026-08-08"));
+  assert.equal(s(next), "10-Sep-2026");
+  // Still exactly on the billing day, still derivable from the joining date.
+  assert.equal(deriveBillingMonths(join, next), 8);
+});
+
+test("a lapsed member buying a longer plan gets the whole plan", () => {
+  const join = d("2026-01-10");
+  const lapsed = d("2026-03-10");
+  const today = d("2026-08-08");
+  assert.equal(s(computeRenewalExpiry(join, lapsed, 90, today)), "10-Nov-2026");
+  assert.equal(s(computeRenewalExpiry(join, lapsed, 365, today)), "10-Aug-2027");
+});
+
+test("a member who lapsed less than a month keeps their billing day", () => {
+  // Expired 5 days ago: the new expiry is the next billing date, unchanged from
+  // an on-time renewal, so short lapses never shift the cycle.
+  const join = d("2026-01-06");
+  const next = computeRenewalExpiry(join, d("2026-08-06"), 30, d("2026-08-11"));
+  assert.equal(s(next), "06-Sep-2026");
+});
+
+test("an expiry that drifted off the billing day is pulled back into line", () => {
+  // A real record: joined 22-Jul, expiry hand-edited to 24-Aug. The renewal
+  // returns the member to the 22nd instead of granting a whole free month.
+  const join = d("2026-07-22");
+  const next = computeRenewalExpiry(join, d("2026-08-24"), 30, d("2026-08-08"));
+  assert.equal(s(next), "22-Sep-2026");
+  assert.ok(next > d("2026-08-24"), "must still add time");
+  assert.equal(deriveBillingMonths(join, next), 2);
+});
+
+test("a drifted expiry is corrected by at most half a month, never a whole one", () => {
+  // Billing day 1st, expiry drifted to 28-Feb. Snapping to the first billing
+  // date after the base would give 01-Mar — one day for a month's payment.
+  // The nearest billing date to the paid-for 28-Mar is 01-Apr.
+  const next = computeRenewalExpiry(d("2026-01-01"), d("2026-02-28"), 30, d("2026-02-20"));
+  assert.equal(s(next), "01-Apr-2026");
+  assert.ok(next > d("2026-02-28"));
+});
+
+/* ── Billing months are derived, never stored ─────────────────────────────── */
+
+test("deriveBillingMonths recovers the month count from a stored expiry", () => {
+  assert.equal(deriveBillingMonths(d("2026-07-22"), d("2026-08-22")), 1);
+  assert.equal(deriveBillingMonths(d("2026-07-22"), d("2026-09-22")), 2);
+  assert.equal(deriveBillingMonths(d("2026-07-15"), d("2027-07-15")), 12);
+  // The expiry equalling the joining date is zero months, not a billing period.
+  assert.equal(deriveBillingMonths(d("2026-07-22"), d("2026-07-22")), null);
+});
+
+test("deriveBillingMonths refuses an expiry that is off the billing day", () => {
+  // The two production records whose expiry sits 1–2 days past the billing day.
+  assert.equal(deriveBillingMonths(d("2026-07-22"), d("2026-08-24")), null);
+  assert.equal(deriveBillingMonths(d("2026-07-22"), d("2026-08-23")), null);
+  // Missing inputs are reported the same way, never guessed.
+  assert.equal(deriveBillingMonths(null, d("2026-08-22")), null);
+  assert.equal(deriveBillingMonths(d("2026-07-22"), null), null);
+});
+
+test("deriveBillingMonths handles a clamped month-end expiry", () => {
+  // 31-Jan + 1 month clamps to 28-Feb, and the scan finds that exact date.
+  assert.equal(deriveBillingMonths(d("2027-01-31"), d("2027-02-28")), 1);
+  assert.equal(deriveBillingMonths(d("2027-01-31"), d("2027-03-31")), 2);
+  // 31-Mar is unreachable from 28-Feb by whole months (28-Mar, 28-Apr, …).
+  assert.equal(deriveBillingMonths(d("2027-02-28"), d("2027-03-31")), null);
+});
+
+test("getBillingMonthsPaid reads a member record, ISO strings included", () => {
+  // The shape the client actually receives: JSON-serialised dates.
+  assert.equal(
+    getBillingMonthsPaid({
+      joinDate: "2026-07-22T00:00:00.000Z",
+      planEndDate: "2026-09-22T00:00:00.000Z",
+    }),
+    2
+  );
+  // A legacy record with no joining date falls back to the plan start.
+  assert.equal(
+    getBillingMonthsPaid({
+      planStartDate: "2026-07-22T00:00:00.000Z",
+      planEndDate: "2026-08-22T00:00:00.000Z",
+    }),
+    1
+  );
+  assert.equal(getBillingMonthsPaid(null), null);
+  assert.equal(getBillingMonthsPaid({ planEndDate: "2026-08-22T00:00:00.000Z" }), null);
+});
+
+test("every renewal result is itself on the billing day", () => {
+  // Whatever the starting record looks like, the answer must be a date the
+  // joining anchor can reproduce — that is what keeps the cycle self-correcting.
+  const join = d("2027-01-31");
+  const starts = [d("2027-02-28"), d("2027-03-15"), d("2026-11-30"), d("2027-04-30")];
+  for (const start of starts) {
+    for (const days of [30, 90, 365]) {
+      const next = computeRenewalExpiry(join, start, days, d("2027-03-01"));
+      assert.ok(
+        deriveBillingMonths(join, next) !== null,
+        `renewing ${s(start)} by ${days}d gave ${s(next)}, which is off the billing day`
+      );
+      assert.ok(next > start, `renewing ${s(start)} by ${days}d must add time`);
+    }
+  }
+});
+
+test("no stored billingMonths field was introduced", () => {
+  // The count is a function of joinDate + planEndDate. Storing a second copy
+  // would let it drift on any hand-edited date, so the schema must stay clean.
+  const model = readFileSync(pathJoin(ROOT, "models/Member.js"), "utf8");
+  assert.doesNotMatch(model, /billingMonths/, "billingMonths must remain derived");
+  for (const file of [
+    "app/api/members/route.js",
+    "app/api/members/renew/[id]/route.js",
+    "app/api/members/[id]/route.js",
+  ]) {
+    const src = readFileSync(pathJoin(ROOT, file), "utf8");
+    assert.doesNotMatch(src, /billingMonths\s*[:=]/, `${file} must not persist the count`);
+  }
+});
+
+test("the renewal sheet previews the expiry with the API's own calculation", () => {
+  // If the sheet computed the date differently, the admin could confirm one
+  // expiry and the server could store another.
+  const sheet = readFileSync(pathJoin(ROOT, "components/members/RenewalModal.jsx"), "utf8");
+  assert.match(sheet, /computeRenewalExpiry/);
+  const renewRoute = readFileSync(
+    pathJoin(ROOT, "app/api/members/renew/[id]/route.js"),
+    "utf8"
+  );
+  assert.match(renewRoute, /computeRenewalExpiry/);
+});
+
+test("computeRenewalExpiry does not mutate its inputs", () => {
+  const join = utc("2026-07-06");
+  const expiry = utc("2026-08-06");
+  const joinBefore = join.getTime();
+  const expiryBefore = expiry.getTime();
+  computeRenewalExpiry(join, expiry, 30, utc("2026-08-01"));
+  assert.equal(join.getTime(), joinBefore, "joining date must not be mutated");
+  assert.equal(expiry.getTime(), expiryBefore, "expiry must not be mutated");
+});
+
+test("expiry computation is stable when re-applied (migration idempotency)", () => {
+  // Re-deriving an expiry from an already-correct record must be a no-op.
+  const join = utc("2026-07-06");
+  const first = utcDateOnly(computeExpiryFromJoin(join, 2));
+  const second = utcDateOnly(computeExpiryFromJoin(join, 2));
+  assert.equal(first.getTime(), second.getTime());
+  assert.equal(first.toISOString(), "2026-09-06T00:00:00.000Z");
 });

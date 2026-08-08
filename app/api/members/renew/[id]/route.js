@@ -8,7 +8,7 @@ import { decorateMember } from "@/lib/memberUtils";
 import {
   computeMemberStatus,
   computeRenewalExpiry,
-  startOfDay,
+  utcDateOnly,
 } from "@/lib/dateUtils";
 import { generateReceiptText } from "@/lib/receiptFormatter";
 
@@ -49,21 +49,20 @@ export async function POST(request, { params }) {
 
     const currentStatus = computeMemberStatus(member.planEndDate);
     const previousExpiry = member.planEndDate;
-    const today = startOfDay(new Date());
 
-    // Anchor the new expiry to the member's joining day-of-month. The payment
-    // date is only recorded, never used to compute the renewal day — the cycle
-    // stays fixed to the joining date regardless of when the member pays.
+    // The billing anchor is the member's authoritative joining date. It is READ
+    // here and never written — a renewal must never change when someone joined.
+    // The fallbacks only exist for legacy records created before joinDate was
+    // required; every current record has one.
     const anchorDate = member.joinDate || member.planStartDate || previousExpiry;
     const newExpiry = computeRenewalExpiry(
       anchorDate,
       previousExpiry,
-      planDurationDays,
-      today
+      planDurationDays
     );
     // The new billing period runs continuously from the previous expiry.
     const newStartDate =
-      currentStatus === "expired" ? today : previousExpiry;
+      currentStatus === "expired" ? utcDateOnly(new Date()) : utcDateOnly(previousExpiry);
 
     const gymName = session.gymName || (await Admin.findOne().lean())?.gymName || "Gym";
 
@@ -93,6 +92,7 @@ export async function POST(request, { params }) {
     member.planStartDate = newStartDate;
     member.status = computeMemberStatus(newExpiry);
     member.miaFlagged = false;
+    // member.joinDate is deliberately NOT touched here.
     await member.save();
 
     return ok({

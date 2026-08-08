@@ -1,37 +1,46 @@
 /**
- * Read-only audit: find members whose billing anchor (joinDate) is suspicious,
- * and show what their next renewal expiry would be under the current
- * anchor-based rules.
+ * READ-ONLY audit of every member's billing anchor. Writes nothing.
  *
- * Flags two conditions:
- *   STAMPED  — joinDate falls on the same calendar day as createdAt, i.e. it
- *              was auto-stamped at creation time instead of taking the joining
- *              date the admin typed. Anchor day is therefore wrong.
- *   BACKSLIDE— the next renewal would land EARLIER than currentExpiry + 1 month
- *              because the anchor day is behind the current expiry day, so the
- *              member silently loses days.
+ * The joining date is the single source of truth for expiry dates: a member's
+ * billing day is permanently the day-of-month they joined, and every expiry is
+ * that day, a whole number of calendar months later. This script checks that
+ * invariant against production data and shows what the next renewal would do.
  *
- * Usage: node scripts/audit-anchors.mjs
+ * All billing maths is imported from lib/dateUtils.js — the exact module the
+ * app runs on — so the audit can never disagree with the application.
+ *
+ *   node scripts/audit-anchors.mjs          # problem rows only
+ *   node scripts/audit-anchors.mjs --all    # every member
+ *
+ * Flags
+ *   OFF-ANCHOR  the stored expiry does not sit on the member's billing day, so
+ *               no whole number of months reproduces it. Usually a hand-edited
+ *               date. The next renewal corrects it by at most half a month.
+ *   NO-JOIN     no joining date at all (pre-dates the required field). The
+ *               renewal falls back to the plan start date as its anchor.
+ *   STAMPED     the joining date falls on the same calendar day the record was
+ *               created. Benign for a member registered on the day they joined,
+ *               but on an older record it means the real joining date was lost.
+ *   TIMESTAMPED the joining date carries a time component instead of being a
+ *               clean date-only value, which is how the old auto-stamped dates
+ *               are recognised.
  */
 
 import mongoose from "mongoose";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
+import { dirname, join as pathJoin } from "node:path";
+import { format, isSameDay, differenceInDays } from "date-fns";
 import {
-  format,
-  getDate,
-  addMonths,
-  setDate,
-  getDaysInMonth,
-  startOfDay,
-  differenceInDays,
-  isSameDay,
-} from "date-fns";
+  computeRenewalExpiry,
+  deriveBillingMonths,
+  isUtcDateOnly,
+  utcDateOnly,
+} from "../lib/dateUtils.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 try {
-  const env = readFileSync(join(__dirname, "..", ".env.local"), "utf8");
+  const env = readFileSync(pathJoin(__dirname, "..", ".env.local"), "utf8");
   for (const line of env.split("\n")) {
     const t = line.trim();
     if (!t || t.startsWith("#")) continue;
@@ -45,62 +54,98 @@ try {
   process.exit(1);
 }
 
-const fmt = (d) => (d ? format(new Date(d), "dd-MMM-yyyy") : "—");
-const applyAnchorDay = (date, day) => {
-  const d = new Date(date);
-  return setDate(d, Math.min(day, getDaysInMonth(d)));
-};
-const durationToMonths = (days) => Math.max(1, Math.round((Number(days) || 0) / 30));
+const SHOW_ALL = process.argv.includes("--all");
+const f = (d) => (d ? format(utcDateOnly(d), "dd-MMM-yyyy") : "—");
+const pad = (s, n) => String(s).slice(0, n).padEnd(n);
 
 await mongoose.connect(process.env.MONGODB_URI, {
   bufferCommands: false,
   serverSelectionTimeoutMS: 8000,
 });
 
-const all = await mongoose.connection
+const members = await mongoose.connection
   .collection("members")
   .find({ isDeleted: { $ne: true } })
   .toArray();
 
 const rows = [];
-for (const m of all) {
-  if (!m.joinDate || !m.planEndDate) continue;
-  const anchorDay = getDate(new Date(m.joinDate));
-  const months = durationToMonths(m.planDurationDays);
-  const plain = addMonths(new Date(m.planEndDate), months);
-  const anchored = applyAnchorDay(plain, anchorDay);
-  const drift = differenceInDays(startOfDay(anchored), startOfDay(plain));
+for (const m of members) {
+  const anchor = m.joinDate || m.planStartDate;
+  const flags = [];
 
-  const stamped =
-    m.createdAt && isSameDay(new Date(m.joinDate), new Date(m.createdAt));
+  if (!m.joinDate) flags.push("NO-JOIN");
+  else if (!isUtcDateOnly(m.joinDate)) flags.push("TIMESTAMPED");
+  if (m.joinDate && m.createdAt && isSameDay(new Date(m.joinDate), new Date(m.createdAt)))
+    flags.push("STAMPED");
 
-  if (!stamped && drift === 0) continue;
+  const monthsPaid = deriveBillingMonths(anchor, m.planEndDate);
+  if (monthsPaid === null && anchor && m.planEndDate) flags.push("OFF-ANCHOR");
+
+  // What the next 1-month renewal would produce today, and how many days of
+  // membership that actually grants. Coverage starts at the later of the
+  // current expiry and today, so a lapsed member's dead months are excluded.
+  let next = null;
+  let grantedDays = null;
+  if (anchor && m.planEndDate) {
+    next = computeRenewalExpiry(anchor, m.planEndDate, 30);
+    const today = utcDateOnly(new Date());
+    const expiry = utcDateOnly(m.planEndDate);
+    grantedDays = differenceInDays(next, expiry > today ? expiry : today);
+  }
 
   rows.push({
     id: m.customMemberId || String(m._id).slice(-6),
-    name: m.name,
-    join: fmt(m.joinDate),
-    created: fmt(m.createdAt),
-    expiry: fmt(m.planEndDate),
-    next: fmt(anchored),
-    drift,
-    flags: [stamped ? "STAMPED" : null, drift < 0 ? "BACKSLIDE" : null]
-      .filter(Boolean)
-      .join("+"),
+    name: m.name || "(no name)",
+    join: anchor,
+    expiry: m.planEndDate,
+    monthsPaid,
+    next,
+    grantedDays,
+    flags,
   });
 }
 
-console.log(`Scanned ${all.length} active member records.`);
-console.log(`Flagged ${rows.length}.\n`);
-console.log(
-  "ID     NAME                 JOIN          CREATED       EXPIRY        NEXT RENEWAL  DRIFT  FLAGS"
-);
-for (const r of rows.sort((a, b) => a.drift - b.drift)) {
+const clean = rows.filter((r) => !r.flags.includes("OFF-ANCHOR") && !r.flags.includes("NO-JOIN"));
+const problems = rows.filter((r) => r.flags.includes("OFF-ANCHOR") || r.flags.includes("NO-JOIN"));
+const stamped = rows.filter((r) => r.flags.includes("STAMPED"));
+
+console.log(`\nREAD-ONLY AUDIT — no database writes\n${"=".repeat(104)}\n`);
+console.log(`Members scanned              : ${rows.length}`);
+console.log(`Expiry on the billing day    : ${clean.length}`);
+console.log(`Needs no action, but noted   : ${stamped.length} STAMPED`);
+console.log(`Off-anchor or missing anchor : ${problems.length}`);
+
+function table(title, list) {
+  if (!list.length) return;
+  console.log(`\n── ${title} (${list.length}) ${"─".repeat(Math.max(0, 72 - title.length))}`);
   console.log(
-    `${r.id.padEnd(6)} ${r.name.slice(0, 20).padEnd(20)} ${r.join.padEnd(13)} ` +
-      `${r.created.padEnd(13)} ${r.expiry.padEnd(13)} ${r.next.padEnd(13)} ` +
-      `${String(r.drift).padStart(5)}  ${r.flags}`
+    `${pad("ID", 7)}${pad("NAME", 22)}${pad("JOINED", 13)}${pad("EXPIRY", 13)}` +
+      `${"PAID".padStart(5)}  ${pad("NEXT RENEWAL", 13)}${"+DAYS".padStart(6)}  FLAGS`
   );
+  for (const r of list) {
+    console.log(
+      `${pad(r.id, 7)}${pad(r.name, 22)}${pad(f(r.join), 13)}${pad(f(r.expiry), 13)}` +
+        `${String(r.monthsPaid ?? "—").padStart(4)}m  ${pad(f(r.next), 13)}` +
+        `${String(r.grantedDays ?? "—").padStart(6)}  ${r.flags.join("+") || "ok"}`
+    );
+  }
 }
+
+table("OFF-ANCHOR / NO-JOIN — the next renewal will realign these", problems);
+if (SHOW_ALL) table("ON-ANCHOR", clean);
+else console.log(`\n${clean.length} members sit exactly on their billing day (--all to list).`);
+
+// A renewal must always add time, and a one-month renewal should grant roughly
+// a month. Anything outside 16–46 days means a record needs a human look.
+const suspicious = rows.filter(
+  (r) => r.grantedDays !== null && (r.grantedDays < 16 || r.grantedDays > 46)
+);
+console.log(
+  `\nOne-month renewals granting an unusual number of days: ${suspicious.length}` +
+    (suspicious.length
+      ? `\n${suspicious.map((r) => `  ${r.id} ${r.name} → +${r.grantedDays}d`).join("\n")}`
+      : " (none — every renewal grants 16–46 days)")
+);
+console.log();
 
 await mongoose.disconnect();

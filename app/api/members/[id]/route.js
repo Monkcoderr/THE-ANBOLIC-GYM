@@ -4,6 +4,7 @@ import Member from "@/models/Member";
 import Payment from "@/models/Payment";
 import { ok, fail, requireAuth } from "@/lib/apiResponse";
 import { decorateMember } from "@/lib/memberUtils";
+import { utcDateOnly } from "@/lib/dateUtils";
 import { digitsOnly, normalizeMemberId } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -65,10 +66,13 @@ export async function PUT(request, { params }) {
     if (parsed.data.name !== undefined) update.name = parsed.data.name;
     if (parsed.data.address !== undefined) update.address = parsed.data.address;
     if (parsed.data.notes !== undefined) update.notes = parsed.data.notes;
-    // Joining date is the permanent billing anchor. Changing it re-bases every
-    // future renewal onto the new day-of-month (the next renewal re-anchors the
-    // expiry); the current expiry is left untouched.
-    if (parsed.data.joinDate !== undefined) update.joinDate = parsed.data.joinDate;
+    // Joining date is the permanent billing anchor and the ONLY place it may be
+    // changed. Stored as a date-only UTC value like every other business date.
+    // Changing it re-bases every future renewal onto the new day-of-month (the
+    // next renewal re-anchors the expiry); the current expiry is left untouched
+    // so an admin correcting a typo cannot accidentally alter a paid-up period.
+    if (parsed.data.joinDate !== undefined)
+      update.joinDate = utcDateOnly(parsed.data.joinDate);
     if (parsed.data.phone !== undefined) {
       const phone = digitsOnly(parsed.data.phone);
       if (phone.length < 10) {
