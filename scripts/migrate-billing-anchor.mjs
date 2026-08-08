@@ -87,6 +87,24 @@ if (rollbackIdx !== -1 && !ROLLBACK_FILE) {
 }
 
 // ── Billing maths (mirrors lib/dateUtils.js exactly) ──────────────────────
+/**
+ * Normalise to a DATE-ONLY value stored at UTC midnight, which is the
+ * convention every date in this database already follows (the app runs on a
+ * UTC server, where local midnight IS UTC midnight).
+ *
+ * This must be applied to everything the migration writes. Using date-fns'
+ * startOfDay here instead would store local midnight — on an IST machine that
+ * is 18:30 UTC the PREVIOUS day, so the production server would render every
+ * migrated date one day early and read the wrong billing day off it.
+ */
+const utcDateOnly = (date) => {
+  const d = new Date(date);
+  return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+};
+/** True when a stored value is already a clean UTC-midnight date-only value. */
+const isUtcDateOnly = (date) =>
+  date instanceof Date && date.getTime() === utcDateOnly(date).getTime();
+
 const applyAnchorDay = (date, anchorDay) => {
   const d = new Date(date);
   return setDate(d, Math.min(anchorDay, getDaysInMonth(d)));
@@ -231,22 +249,30 @@ function planFor(member) {
   }
 
   // ── 3. Derive the expiry from the joining date ─────────────────────────
-  const expected = computeExpiryFromJoin(anchor, totalMonths);
+  const expected = utcDateOnly(computeExpiryFromJoin(anchor, totalMonths));
+  const anchorNormalised = utcDateOnly(anchor);
   const current = new Date(member.planEndDate);
   const diff = differenceInDays(startOfDay(expected), startOfDay(current));
-  const joinChanged = !storedJoin || !isSameDay(storedJoin, anchor);
+  // A record also needs rewriting when the calendar date is right but the
+  // stored value isn't a clean UTC-midnight date-only value.
+  const joinChanged =
+    !storedJoin ||
+    !isSameDay(storedJoin, anchorNormalised) ||
+    !isUtcDateOnly(storedJoin);
+  const expiryChanged = diff !== 0 || !isUtcDateOnly(current);
 
   return {
     plan: {
       id: member.customMemberId || String(member._id).slice(-6),
       _id: member._id,
       name: member.name || "(no name)",
-      anchor,
+      anchor: anchorNormalised,
       storedJoin,
       current,
       expected,
       diff,
       joinChanged,
+      expiryChanged,
       anchorNote,
       monthsNote,
       status: computeMemberStatus(expected, today),
@@ -265,19 +291,22 @@ for (const m of members) {
     // real, so these records join the normal migration set.
     if (ASSUME_MONTHLY && r.suggestedJoin) {
       const current = new Date(m.planEndDate);
+      const suggestedJoin = utcDateOnly(r.suggestedJoin);
+      const suggestedExpiry = utcDateOnly(r.suggestedExpiry);
       changes.push({
         id: m.customMemberId || String(m._id).slice(-6),
         _id: m._id,
         name: m.name || "(no name)",
-        anchor: r.suggestedJoin,
+        anchor: suggestedJoin,
         storedJoin: m.joinDate ? new Date(m.joinDate) : null,
         current,
-        expected: r.suggestedExpiry,
-        diff: differenceInDays(startOfDay(r.suggestedExpiry), startOfDay(current)),
+        expected: suggestedExpiry,
+        diff: differenceInDays(startOfDay(suggestedExpiry), startOfDay(current)),
         joinChanged: true,
-        anchorNote: `joinDate ${f(m.joinDate)}→${f(r.suggestedJoin)} (assumed 1m initial)`,
+        expiryChanged: true,
+        anchorNote: `joinDate ${f(m.joinDate)}→${f(suggestedJoin)} (assumed 1m initial)`,
         monthsNote: `1m initial (assumed) + renewals = ${r.suggestedMonths}m`,
-        status: computeMemberStatus(r.suggestedExpiry, today),
+        status: computeMemberStatus(suggestedExpiry, today),
         renewals: 1,
       });
       continue;
@@ -291,7 +320,7 @@ for (const m of members) {
       suggestedJoin: r.suggestedJoin,
       suggestedExpiry: r.suggestedExpiry,
     });
-  } else if (r.plan.diff !== 0 || r.plan.joinChanged) {
+  } else if (r.plan.expiryChanged || r.plan.joinChanged) {
     changes.push(r.plan);
   } else {
     unchanged.push(r.plan);
@@ -407,8 +436,8 @@ if (!APPLY) {
       filter: { _id: c._id },
       update: {
         $set: {
-          joinDate: startOfDay(c.anchor),
-          planEndDate: startOfDay(c.expected),
+          joinDate: utcDateOnly(c.anchor),
+          planEndDate: utcDateOnly(c.expected),
           status: c.status,
           updatedAt: new Date(),
         },

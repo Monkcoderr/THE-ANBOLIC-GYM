@@ -1,0 +1,918 @@
+{
+  "takenAt": "2026-08-08T08:59:15.418Z",
+  "note": "Pre-migration joinDate/planEndDate/status for records changed by migrate-billing-anchor.mjs",
+  "records": [
+    {
+      "_id": "6a5238951ae6f03041c3c968",
+      "name": "Ritik",
+      "customMemberId": "1507",
+      "joinDate": "2026-07-04T18:30:00.000Z",
+      "planEndDate": "2026-08-04T18:30:00.000Z",
+      "status": "expired"
+    },
+    {
+      "_id": "6a57aa6db92953a143a484a0",
+      "name": "Biru",
+      "customMemberId": "1285",
+      "joinDate": "2026-07-06T18:30:00.000Z",
+      "planEndDate": "2026-10-06T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a5f60232f509dda3f225c07",
+      "name": "Amir Ahmad",
+      "customMemberId": "1537",
+      "joinDate": "2026-07-02T18:30:00.000Z",
+      "planEndDate": "2026-08-02T18:30:00.000Z",
+      "status": "expired"
+    },
+    {
+      "_id": "6a5f607d2f509dda3f225c0f",
+      "name": "Aasim",
+      "customMemberId": "1539",
+      "joinDate": "2026-07-05T18:30:00.000Z",
+      "planEndDate": "2026-08-05T18:30:00.000Z",
+      "status": "expired"
+    },
+    {
+      "_id": "6a5f60a62f509dda3f225c13",
+      "name": "Ashmit",
+      "customMemberId": "1540",
+      "joinDate": "2026-07-07T18:30:00.000Z",
+      "planEndDate": "2026-08-07T18:30:00.000Z",
+      "status": "expiring"
+    },
+    {
+      "_id": "6a5f60e72f509dda3f225c17",
+      "name": "Deepak Chaudhary",
+      "customMemberId": "1541",
+      "joinDate": "2026-07-07T18:30:00.000Z",
+      "planEndDate": "2026-08-07T18:30:00.000Z",
+      "status": "expiring"
+    },
+    {
+      "_id": "6a5f611f2f509dda3f225c1b",
+      "name": "Ansh",
+      "customMemberId": "1544",
+      "joinDate": "2026-07-10T18:30:00.000Z",
+      "planEndDate": "2026-08-10T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a5f61512f509dda3f225c1f",
+      "name": "Arun",
+      "customMemberId": "1545",
+      "joinDate": "2026-07-11T18:30:00.000Z",
+      "planEndDate": "2026-08-11T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a6021ac4543c8ce4b6a9ab7",
+      "name": "Amit",
+      "customMemberId": "1706",
+      "joinDate": "2026-07-19T18:30:00.000Z",
+      "planEndDate": "2026-08-19T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a6022124543c8ce4b6a9abe",
+      "name": "Harshit",
+      "customMemberId": "1707",
+      "joinDate": "2026-07-19T18:30:00.000Z",
+      "planEndDate": "2026-08-19T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a6022d84543c8ce4b6a9ac5",
+      "name": "Priyanshu",
+      "customMemberId": "1708",
+      "joinDate": "2026-07-20T18:30:00.000Z",
+      "planEndDate": "2026-08-20T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a6023314543c8ce4b6a9acc",
+      "name": "Shivam",
+      "customMemberId": "1709",
+      "joinDate": "2026-07-20T18:30:00.000Z",
+      "planEndDate": "2026-08-20T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a6023704543c8ce4b6a9ad3",
+      "name": "Varun",
+      "customMemberId": "1710",
+      "joinDate": "2026-07-20T18:30:00.000Z",
+      "planEndDate": "2026-08-20T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a602632d36f4ce0c227a0f1",
+      "name": "Shyam",
+      "customMemberId": "1647",
+      "joinDate": "2026-07-11T18:30:00.000Z",
+      "planEndDate": "2026-08-11T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a6027e7159e93a8ce37dd0b",
+      "name": "Dushyant",
+      "customMemberId": "1448",
+      "joinDate": "2026-07-17T18:30:00.000Z",
+      "planEndDate": "2026-08-17T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a602843159e93a8ce37dd12",
+      "name": "Jai thakur",
+      "customMemberId": "1691",
+      "joinDate": "2026-06-30T18:30:00.000Z",
+      "planEndDate": "2026-09-30T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a6028a1159e93a8ce37dd19",
+      "name": "Annu",
+      "customMemberId": "1523",
+      "joinDate": "2026-07-17T18:30:00.000Z",
+      "planEndDate": "2026-08-17T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a602996159e93a8ce37dd23",
+      "name": "Ishant",
+      "customMemberId": "1020",
+      "joinDate": "2026-07-10T18:30:00.000Z",
+      "planEndDate": "2026-08-10T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a6029d5159e93a8ce37dd2a",
+      "name": "Naseem",
+      "customMemberId": "113",
+      "joinDate": "2026-07-15T18:30:00.000Z",
+      "planEndDate": "2026-08-15T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a602a59159e93a8ce37dd32",
+      "name": "Kanhaiya",
+      "customMemberId": "1669",
+      "joinDate": "2026-07-06T18:30:00.000Z",
+      "planEndDate": "2026-08-06T18:30:00.000Z",
+      "status": "expired"
+    },
+    {
+      "_id": "6a602afd159e93a8ce37dd39",
+      "name": "Lucky",
+      "customMemberId": "1066",
+      "joinDate": "2026-06-30T18:30:00.000Z",
+      "planEndDate": "2026-08-31T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a602b65159e93a8ce37dd40",
+      "name": "Anshu",
+      "customMemberId": "1662",
+      "joinDate": "2026-07-02T18:30:00.000Z",
+      "planEndDate": "2026-08-02T18:30:00.000Z",
+      "status": "expired"
+    },
+    {
+      "_id": "6a602d03159e93a8ce37dd47",
+      "name": "Rachna upadhaya",
+      "customMemberId": "1430",
+      "joinDate": "2026-06-27T18:30:00.000Z",
+      "planEndDate": "2026-07-27T18:30:00.000Z",
+      "status": "expired"
+    },
+    {
+      "_id": "6a602ebe130bcadadc804f31",
+      "name": "Adil choudhary",
+      "customMemberId": "1223",
+      "joinDate": "2026-06-27T18:30:00.000Z",
+      "planEndDate": "2026-09-27T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a602f7c130bcadadc804f3f",
+      "name": "Gaurav",
+      "customMemberId": "1398",
+      "joinDate": "2026-07-06T18:30:00.000Z",
+      "planEndDate": "2026-08-06T18:30:00.000Z",
+      "status": "expired"
+    },
+    {
+      "_id": "6a603065130bcadadc804f46",
+      "name": "Ishtar saifi",
+      "customMemberId": "1190",
+      "joinDate": "2026-06-14T18:30:00.000Z",
+      "planEndDate": "2026-09-14T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a603293130bcadadc804f67",
+      "name": "Amit singh",
+      "customMemberId": "1052",
+      "joinDate": "2026-06-21T18:30:00.000Z",
+      "planEndDate": "2026-07-21T18:30:00.000Z",
+      "status": "expired"
+    },
+    {
+      "_id": "6a6032e2130bcadadc804f6e",
+      "name": "Sachin chandra",
+      "customMemberId": "1612",
+      "joinDate": "2026-05-31T18:30:00.000Z",
+      "planEndDate": "2026-06-30T18:30:00.000Z",
+      "status": "expired"
+    },
+    {
+      "_id": "6a603331130bcadadc804f75",
+      "name": "Kishor joshi",
+      "customMemberId": "1611",
+      "joinDate": "2026-05-31T18:30:00.000Z",
+      "planEndDate": "2026-06-30T18:30:00.000Z",
+      "status": "expired"
+    },
+    {
+      "_id": "6a6035837373072f5f880299",
+      "name": "Sonu rajput",
+      "customMemberId": "1703",
+      "joinDate": "2026-07-10T18:30:00.000Z",
+      "planEndDate": "2026-08-10T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a61757fde46c7341fe4445d",
+      "name": "Ranjeet singh",
+      "customMemberId": "728",
+      "joinDate": "2026-07-05T18:30:00.000Z",
+      "planEndDate": "2026-09-05T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a61782531cce9b192ad30ad",
+      "name": "Anuj",
+      "customMemberId": "881",
+      "joinDate": "2026-07-12T18:30:00.000Z",
+      "planEndDate": "2026-08-12T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a6178aa31cce9b192ad30ba",
+      "name": "Mohd Azeem",
+      "customMemberId": "1704",
+      "joinDate": "2026-07-12T18:30:00.000Z",
+      "planEndDate": "2026-08-12T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a6179a631cce9b192ad30c1",
+      "name": "Neha sharma",
+      "customMemberId": "1690",
+      "joinDate": "2026-06-30T18:30:00.000Z",
+      "planEndDate": "2026-07-31T18:30:00.000Z",
+      "status": "expired"
+    },
+    {
+      "_id": "6a617a5831cce9b192ad30c8",
+      "name": "Sagar",
+      "customMemberId": "1003",
+      "joinDate": "2026-07-22T18:30:00.000Z",
+      "planEndDate": "2026-08-22T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a617ace31cce9b192ad30d3",
+      "name": "Sharmila karki pandey",
+      "customMemberId": "1638",
+      "joinDate": "2026-06-10T18:30:00.000Z",
+      "planEndDate": "2026-07-10T18:30:00.000Z",
+      "status": "expired"
+    },
+    {
+      "_id": "6a617cc431cce9b192ad30e3",
+      "name": "Aditya",
+      "customMemberId": "1337",
+      "joinDate": "2026-07-17T18:30:00.000Z",
+      "planEndDate": "2026-08-17T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a617e9efd908dabf4085e5e",
+      "name": "Rohit",
+      "customMemberId": "975",
+      "joinDate": "2026-05-15T18:30:00.000Z",
+      "planEndDate": "2026-08-15T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a61804aab52aa53918d913a",
+      "name": "Wajid",
+      "customMemberId": "1682",
+      "joinDate": "2026-07-17T18:30:00.000Z",
+      "planEndDate": "2026-08-17T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a6182e72fcfc4015d2e2d82",
+      "name": "Manish Rajput",
+      "customMemberId": "1355",
+      "joinDate": "2026-07-09T18:30:00.000Z",
+      "planEndDate": "2026-08-09T18:30:00.000Z",
+      "status": "expiring"
+    },
+    {
+      "_id": "6a61848820f50f159b8bd107",
+      "name": "Sachin",
+      "customMemberId": "1033",
+      "joinDate": "2026-05-09T18:30:00.000Z",
+      "planEndDate": "2026-08-09T18:30:00.000Z",
+      "status": "expiring"
+    },
+    {
+      "_id": "6a621e1e83ac37d960c4da01",
+      "name": "Affi Tyagi",
+      "customMemberId": "1618",
+      "joinDate": "2026-07-05T18:30:00.000Z",
+      "planEndDate": "2026-08-05T18:30:00.000Z",
+      "status": "expired"
+    },
+    {
+      "_id": "6a621eb883ac37d960c4da0f",
+      "name": "Khushi Chaudhary",
+      "customMemberId": "1699",
+      "joinDate": "2026-07-12T18:30:00.000Z",
+      "planEndDate": "2026-08-12T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a621f2083ac37d960c4da1d",
+      "name": "Arman Ansari",
+      "customMemberId": "1139",
+      "joinDate": "2026-07-16T18:30:00.000Z",
+      "planEndDate": "2026-08-16T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a621f6c83ac37d960c4da24",
+      "name": "Pintu kumar",
+      "customMemberId": "1174",
+      "joinDate": "2026-07-09T18:30:00.000Z",
+      "planEndDate": "2026-08-09T18:30:00.000Z",
+      "status": "expiring"
+    },
+    {
+      "_id": "6a6239c792d68bca96b6d5ab",
+      "name": "Jatin kumar",
+      "customMemberId": "1616",
+      "joinDate": "2026-05-03T18:30:00.000Z",
+      "planEndDate": "2026-08-03T18:30:00.000Z",
+      "status": "expired"
+    },
+    {
+      "_id": "6a623a2892d68bca96b6d5b2",
+      "name": "Vikash gupta",
+      "customMemberId": "1617",
+      "joinDate": "2026-07-03T18:30:00.000Z",
+      "planEndDate": "2026-08-03T18:30:00.000Z",
+      "status": "expired"
+    },
+    {
+      "_id": "6a623e28598519f7f4471631",
+      "name": "Manish kumar",
+      "customMemberId": "1711",
+      "joinDate": "2026-07-19T18:30:00.000Z",
+      "planEndDate": "2026-10-19T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a623f3e598519f7f4471638",
+      "name": "Saurabh",
+      "customMemberId": "1712",
+      "joinDate": "2026-07-22T18:30:00.000Z",
+      "planEndDate": "2026-08-22T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a624005598519f7f447163f",
+      "name": "Ankit",
+      "customMemberId": "1713",
+      "joinDate": "2026-07-21T18:30:00.000Z",
+      "planEndDate": "2026-08-21T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a63857ad3caadee132eb1a8",
+      "name": "Harsh Pal",
+      "customMemberId": "197",
+      "joinDate": "2026-07-25T18:30:00.000Z",
+      "planEndDate": "2026-10-25T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a6388134ce6429fecd060ae",
+      "name": "Zubair",
+      "customMemberId": "1705",
+      "joinDate": "2026-07-16T18:30:00.000Z",
+      "planEndDate": "2026-08-16T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a638a6d4ce6429fecd060ce",
+      "name": "Murshid",
+      "customMemberId": "1453",
+      "joinDate": "2026-07-06T18:30:00.000Z",
+      "planEndDate": "2026-08-06T18:30:00.000Z",
+      "status": "expired"
+    },
+    {
+      "_id": "6a6419573214ceb403088352",
+      "name": "Sanjana",
+      "customMemberId": "1455",
+      "joinDate": "2026-06-26T18:30:00.000Z",
+      "planEndDate": "2026-09-26T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a64b4f823853bdf38055231",
+      "name": "Bhanu yadav",
+      "customMemberId": "1118",
+      "joinDate": "2026-07-01T18:30:00.000Z",
+      "planEndDate": "2026-08-01T18:30:00.000Z",
+      "status": "expired"
+    },
+    {
+      "_id": "6a64b5a523853bdf38055238",
+      "name": "Radhey Shyam Lodhi",
+      "customMemberId": "1343",
+      "joinDate": "2026-07-13T18:30:00.000Z",
+      "planEndDate": "2026-08-13T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a64b60e23853bdf38055243",
+      "name": "Krishna Lodhi",
+      "customMemberId": "1344",
+      "joinDate": "2026-07-04T18:30:00.000Z",
+      "planEndDate": "2026-08-04T18:30:00.000Z",
+      "status": "expired"
+    },
+    {
+      "_id": "6a64b66623853bdf3805524d",
+      "name": "Himanshu kardam",
+      "customMemberId": "1702",
+      "joinDate": "2026-07-12T18:30:00.000Z",
+      "planEndDate": "2026-08-12T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a64b6a823853bdf38055254",
+      "name": "Manish pal",
+      "customMemberId": "1701",
+      "joinDate": "2026-07-12T18:30:00.000Z",
+      "planEndDate": "2026-08-12T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a64b6e423853bdf3805525b",
+      "name": "Deepak",
+      "customMemberId": "1700",
+      "joinDate": "2026-07-12T18:30:00.000Z",
+      "planEndDate": "2026-08-12T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a64ca418f9871084354fcf6",
+      "name": "Ankit Rawat",
+      "customMemberId": null,
+      "joinDate": "2026-06-17T18:30:00.000Z",
+      "planEndDate": "2026-07-17T18:30:00.000Z",
+      "status": "expired"
+    },
+    {
+      "_id": "6a64ca9b8f9871084354fcfc",
+      "name": "Ansh Tiwari",
+      "customMemberId": "1651",
+      "joinDate": "2026-07-19T18:30:00.000Z",
+      "planEndDate": "2026-08-19T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a64cbe68f9871084354fd1f",
+      "name": "Aaditya",
+      "customMemberId": "1273",
+      "joinDate": "2026-07-09T18:30:00.000Z",
+      "planEndDate": "2026-08-09T18:30:00.000Z",
+      "status": "expiring"
+    },
+    {
+      "_id": "6a64cc708f9871084354fd26",
+      "name": "Kamlesh Chaupal",
+      "customMemberId": "1321",
+      "joinDate": "2026-06-01T18:30:00.000Z",
+      "planEndDate": "2026-09-01T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a64ce3d8f9871084354fd39",
+      "name": "Deepanshu",
+      "customMemberId": "839",
+      "joinDate": "2026-07-02T18:30:00.000Z",
+      "planEndDate": "2026-08-02T18:30:00.000Z",
+      "status": "expired"
+    },
+    {
+      "_id": "6a64ce858f9871084354fd40",
+      "name": "Afzal",
+      "customMemberId": "1596",
+      "joinDate": "2026-07-13T18:30:00.000Z",
+      "planEndDate": "2026-08-13T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a64cf548f9871084354fd52",
+      "name": "Sonu",
+      "customMemberId": "1026",
+      "joinDate": "2026-07-07T18:30:00.000Z",
+      "planEndDate": "2026-08-07T18:30:00.000Z",
+      "status": "expiring"
+    },
+    {
+      "_id": "6a64d04e8f9871084354fd59",
+      "name": "Sandeep",
+      "customMemberId": "506",
+      "joinDate": "2026-07-04T18:30:00.000Z",
+      "planEndDate": "2026-08-04T18:30:00.000Z",
+      "status": "expired"
+    },
+    {
+      "_id": "6a64d30b8f9871084354fd84",
+      "name": "Suraj Chaupal",
+      "customMemberId": "1287",
+      "joinDate": "2026-07-21T18:30:00.000Z",
+      "planEndDate": "2026-08-21T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a64d3d48f9871084354fd9b",
+      "name": "Harsh kumar",
+      "customMemberId": "1212",
+      "joinDate": "2026-07-25T15:18:43.794Z",
+      "planEndDate": "2026-08-25T00:00:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a64d4518f9871084354fda6",
+      "name": "Prashant",
+      "customMemberId": "671",
+      "joinDate": "2026-07-06T18:30:00.000Z",
+      "planEndDate": "2026-10-06T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a64d4918f9871084354fdad",
+      "name": "Harsh",
+      "customMemberId": "1679",
+      "joinDate": "2026-07-08T18:30:00.000Z",
+      "planEndDate": "2026-08-08T18:30:00.000Z",
+      "status": "expiring"
+    },
+    {
+      "_id": "6a64d646236b70f0a3bff9de",
+      "name": "Harsh Suryawanshi",
+      "customMemberId": "1123",
+      "joinDate": "2026-06-09T18:30:00.000Z",
+      "planEndDate": "2026-09-09T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a64d990d92e94dad3a8fc3c",
+      "name": "Vishal Kumar",
+      "customMemberId": null,
+      "joinDate": "2026-07-20T18:30:00.000Z",
+      "planEndDate": "2026-08-20T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a64d9fad92e94dad3a8fc43",
+      "name": "Ashish",
+      "customMemberId": "1687",
+      "joinDate": "2026-07-22T18:30:00.000Z",
+      "planEndDate": "2026-08-22T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a64dbcfac3c7e4f96e62ddf",
+      "name": "Arun Kumar",
+      "customMemberId": "1615",
+      "joinDate": "2026-07-01T18:30:00.000Z",
+      "planEndDate": "2026-08-01T18:30:00.000Z",
+      "status": "expired"
+    },
+    {
+      "_id": "6a64dca2ac3c7e4f96e62de6",
+      "name": "Neeraj Sharma",
+      "customMemberId": "1674",
+      "joinDate": "2026-07-10T18:30:00.000Z",
+      "planEndDate": "2026-08-10T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a64df8dd62a1f876003b42d",
+      "name": "Pankaj",
+      "customMemberId": "1688",
+      "joinDate": "2026-06-24T18:30:00.000Z",
+      "planEndDate": "2026-07-24T18:30:00.000Z",
+      "status": "expired"
+    },
+    {
+      "_id": "6a66d1c9f689efa32c010d92",
+      "name": "Drvesh yadav",
+      "customMemberId": "1583",
+      "joinDate": "2026-07-15T18:30:00.000Z",
+      "planEndDate": "2026-08-15T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a6762467674a398bf2021d0",
+      "name": "Karan rwt",
+      "customMemberId": "1463",
+      "joinDate": "2026-07-12T18:30:00.000Z",
+      "planEndDate": "2026-08-12T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a67677b3bd4f18d54145d5e",
+      "name": "Sumit",
+      "customMemberId": "1072",
+      "joinDate": "2026-07-12T18:30:00.000Z",
+      "planEndDate": "2026-08-12T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a6768123bd4f18d54145d65",
+      "name": "Nishant",
+      "customMemberId": "907",
+      "joinDate": "2026-07-12T18:30:00.000Z",
+      "planEndDate": "2026-08-12T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a67699d3bd4f18d54145d6d",
+      "name": "Lucky",
+      "customMemberId": "1714",
+      "joinDate": "2026-07-20T18:30:00.000Z",
+      "planEndDate": "2026-08-20T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a73205f25233b65d5fa2314",
+      "name": "Akash Rawat",
+      "customMemberId": "1551",
+      "joinDate": "2026-07-17T18:30:00.000Z",
+      "planEndDate": "2026-08-17T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a7320a225233b65d5fa2318",
+      "name": "Dahu",
+      "customMemberId": "1552",
+      "joinDate": "2026-07-16T18:30:00.000Z",
+      "planEndDate": "2026-08-16T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a7320da25233b65d5fa231c",
+      "name": "Piyush",
+      "customMemberId": "1553",
+      "joinDate": "2026-07-23T18:30:00.000Z",
+      "planEndDate": "2026-08-23T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a73210825233b65d5fa2320",
+      "name": "Aansh",
+      "customMemberId": "1554",
+      "joinDate": "2026-07-20T18:30:00.000Z",
+      "planEndDate": "2026-08-20T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a73219c25233b65d5fa2324",
+      "name": "Shivam Shrivastav",
+      "customMemberId": "1557",
+      "joinDate": "2026-07-24T18:30:00.000Z",
+      "planEndDate": "2026-08-24T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a73235125233b65d5fa232d",
+      "name": "Anurag",
+      "customMemberId": "1559",
+      "joinDate": "2026-07-20T18:30:00.000Z",
+      "planEndDate": "2026-08-20T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a73237d25233b65d5fa2331",
+      "name": "Nitin",
+      "customMemberId": "1560",
+      "joinDate": "2026-07-23T18:30:00.000Z",
+      "planEndDate": "2026-08-23T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a7323af25233b65d5fa2335",
+      "name": "Deepak",
+      "customMemberId": "1561",
+      "joinDate": "2026-07-24T18:30:00.000Z",
+      "planEndDate": "2026-08-24T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a7323e025233b65d5fa2339",
+      "name": "Shrey Sharma",
+      "customMemberId": "1562",
+      "joinDate": "2026-07-27T18:30:00.000Z",
+      "planEndDate": "2026-08-27T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a73241125233b65d5fa233d",
+      "name": "Sheetal",
+      "customMemberId": "1563",
+      "joinDate": "2026-07-27T18:30:00.000Z",
+      "planEndDate": "2026-08-27T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a73268458e40ebf0310744b",
+      "name": "Sneha",
+      "customMemberId": "1568",
+      "joinDate": "2026-07-01T18:30:00.000Z",
+      "planEndDate": "2026-08-01T18:30:00.000Z",
+      "status": "expired"
+    },
+    {
+      "_id": "6a73270858e40ebf03107456",
+      "name": "Akshat",
+      "customMemberId": "1571",
+      "joinDate": "2026-07-01T18:30:00.000Z",
+      "planEndDate": "2026-08-01T18:30:00.000Z",
+      "status": "expired"
+    },
+    {
+      "_id": "6a73273f58e40ebf0310745a",
+      "name": "Monu",
+      "customMemberId": "1574",
+      "joinDate": "2026-07-01T18:30:00.000Z",
+      "planEndDate": "2026-08-01T18:30:00.000Z",
+      "status": "expired"
+    },
+    {
+      "_id": "6a73277f58e40ebf0310745e",
+      "name": "Nakul",
+      "customMemberId": "1575",
+      "joinDate": "2026-07-01T18:30:00.000Z",
+      "planEndDate": "2026-08-01T18:30:00.000Z",
+      "status": "expired"
+    },
+    {
+      "_id": "6a7327a758e40ebf03107462",
+      "name": "Vishal",
+      "customMemberId": "1577",
+      "joinDate": "2026-07-03T18:30:00.000Z",
+      "planEndDate": "2026-08-03T18:30:00.000Z",
+      "status": "expired"
+    },
+    {
+      "_id": "6a7327d058e40ebf03107467",
+      "name": "Akash",
+      "customMemberId": "1578",
+      "joinDate": "2026-07-06T18:30:00.000Z",
+      "planEndDate": "2026-08-06T18:30:00.000Z",
+      "status": "expired"
+    },
+    {
+      "_id": "6a73280258e40ebf0310746b",
+      "name": "Khush",
+      "customMemberId": "1579",
+      "joinDate": "2026-07-04T18:30:00.000Z",
+      "planEndDate": "2026-08-04T18:30:00.000Z",
+      "status": "expired"
+    },
+    {
+      "_id": "6a73282758e40ebf0310746f",
+      "name": "Jai",
+      "customMemberId": "1580",
+      "joinDate": "2026-07-03T18:30:00.000Z",
+      "planEndDate": "2026-08-03T18:30:00.000Z",
+      "status": "expired"
+    },
+    {
+      "_id": "6a73286058e40ebf03107473",
+      "name": "Shivam",
+      "customMemberId": "1581",
+      "joinDate": "2026-07-03T18:30:00.000Z",
+      "planEndDate": "2026-08-03T18:30:00.000Z",
+      "status": "expired"
+    },
+    {
+      "_id": "6a73288358e40ebf03107477",
+      "name": "Nikhil",
+      "customMemberId": "1582",
+      "joinDate": "2026-07-03T18:30:00.000Z",
+      "planEndDate": "2026-08-03T18:30:00.000Z",
+      "status": "expired"
+    },
+    {
+      "_id": "6a7328fd58e40ebf0310747c",
+      "name": "Ashutosh Tiwari",
+      "customMemberId": "1584",
+      "joinDate": "2026-07-11T18:30:00.000Z",
+      "planEndDate": "2026-08-11T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a7329a558e40ebf03107481",
+      "name": "Prince",
+      "customMemberId": "1585",
+      "joinDate": "2026-07-11T18:30:00.000Z",
+      "planEndDate": "2026-08-11T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a732a1558e40ebf03107485",
+      "name": "Himashu",
+      "customMemberId": "1586",
+      "joinDate": "2026-07-09T18:30:00.000Z",
+      "planEndDate": "2026-08-09T18:30:00.000Z",
+      "status": "expiring"
+    },
+    {
+      "_id": "6a732a4358e40ebf03107489",
+      "name": "Nitin",
+      "customMemberId": "1587",
+      "joinDate": "2026-07-13T18:30:00.000Z",
+      "planEndDate": "2026-08-13T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a732a5f58e40ebf0310748d",
+      "name": "Sonu",
+      "customMemberId": "1588",
+      "joinDate": "2026-07-11T18:30:00.000Z",
+      "planEndDate": "2026-08-11T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a732a7e58e40ebf03107491",
+      "name": "Mayank",
+      "customMemberId": "1589",
+      "joinDate": "2026-07-11T18:30:00.000Z",
+      "planEndDate": "2026-08-11T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a732aab58e40ebf03107495",
+      "name": "Divya",
+      "customMemberId": "1590",
+      "joinDate": "2026-07-03T18:30:00.000Z",
+      "planEndDate": "2026-08-03T18:30:00.000Z",
+      "status": "expired"
+    },
+    {
+      "_id": "6a732af458e40ebf03107499",
+      "name": "Abhishek",
+      "customMemberId": "1591",
+      "joinDate": "2026-07-09T18:30:00.000Z",
+      "planEndDate": "2026-08-09T18:30:00.000Z",
+      "status": "expiring"
+    },
+    {
+      "_id": "6a732b1258e40ebf0310749d",
+      "name": "Shiv",
+      "customMemberId": "1592",
+      "joinDate": "2026-07-15T18:30:00.000Z",
+      "planEndDate": "2026-08-15T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a732b6458e40ebf031074a3",
+      "name": "Md Tajamul",
+      "customMemberId": "1594",
+      "joinDate": "2026-07-16T18:30:00.000Z",
+      "planEndDate": "2026-08-16T18:30:00.000Z",
+      "status": "active"
+    },
+    {
+      "_id": "6a732b8a58e40ebf031074a8",
+      "name": "Gurpreet",
+      "customMemberId": "1595",
+      "joinDate": "2026-07-17T18:30:00.000Z",
+      "planEndDate": "2026-08-17T18:30:00.000Z",
+      "status": "active"
+    }
+  ]
+}
