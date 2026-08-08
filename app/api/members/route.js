@@ -3,7 +3,12 @@ import { connectDB } from "@/lib/mongodb";
 import Member from "@/models/Member";
 import { ok, fail, requireAuth } from "@/lib/apiResponse";
 import { decorateMember, sortMembers } from "@/lib/memberUtils";
-import { computeMemberStatus, addDays, computeInitialExpiry, startOfDay } from "@/lib/dateUtils";
+import {
+  computeMemberStatus,
+  computeInitialExpiry,
+  computeJoinDateFromExpiry,
+  startOfDay,
+} from "@/lib/dateUtils";
 import { digitsOnly, normalizeMemberId } from "@/lib/utils";
 import { computeNextMemberId } from "@/lib/memberId";
 
@@ -98,22 +103,26 @@ export async function POST(request) {
     }
 
     // Two creation modes:
-    //  • Forward (new signup): start date + duration → derive expiry.
+    //  • Forward (new signup): joining date + duration → derive expiry.
     //  • Backwards (migrating an old member): known expiry + plan length →
-    //    derive the start date so the record stays internally consistent.
+    //    derive the joining date so the record stays internally consistent.
+    // Both modes end up with the joining day equal to the expiry day, which is
+    // the invariant every future renewal depends on.
     let planStartDate;
     let planEndDate;
     let joinDate;
     if (parsed.data.planEndDate) {
       planEndDate = parsed.data.planEndDate;
-      planStartDate = addDays(planEndDate, -planDurationDays);
+      // Whole calendar months back, not a raw day count — subtracting 30 days
+      // from a 31-day month would land on a different day of the month and
+      // permanently offset the member's billing day.
+      planStartDate = computeJoinDateFromExpiry(planEndDate, planDurationDays);
       // Backdate joinDate so migrated members don't pollute "new this month".
       joinDate = planStartDate;
     } else {
       planStartDate = parsed.data.planStartDate || new Date();
-      // Anchor the expiry to the member's joining day-of-month so every future
-      // renewal falls on the same calendar day. The joining date IS the start
-      // date for a new signup.
+      // The joining date IS the start date for a new signup, and the expiry is
+      // always the same day-of-month, N calendar months later.
       planEndDate = computeInitialExpiry(planStartDate, planDurationDays);
       joinDate = planStartDate;
     }

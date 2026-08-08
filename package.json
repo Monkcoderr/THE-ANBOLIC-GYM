@@ -7,9 +7,12 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "test": "node --test scripts/*.test.mjs",
     "seed": "node scripts/seed.mjs",
     "seed:reset": "node scripts/seed.mjs --reset",
-    "fix-index": "node scripts/fix-phone-index.mjs"
+    "fix-index": "node scripts/fix-phone-index.mjs",
+    "audit:anchors": "node scripts/audit-anchors.mjs",
+    "migrate:anchors": "node scripts/migrate-billing-anchor.mjs"
   },
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",
