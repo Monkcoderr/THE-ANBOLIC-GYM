@@ -6,6 +6,11 @@ import { ok, fail, requireAuth } from "@/lib/apiResponse";
 import { decorateMember } from "@/lib/memberUtils";
 import { utcDateOnly } from "@/lib/dateUtils";
 import { digitsOnly, normalizeMemberId } from "@/lib/utils";
+import {
+  assessVoidability,
+  PAYMENT_ACTIVE,
+  PAYMENT_VOIDED,
+} from "@/lib/paymentRevert";
 
 export const dynamic = "force-dynamic";
 
@@ -32,16 +37,72 @@ export async function GET(request, { params }) {
     if (!member) return fail("Member not found", "NOT_FOUND", 404);
 
     const payments = await Payment.find({ memberId: params.id })
-      .sort({ paymentDate: -1 })
+      .sort({ createdAt: -1, _id: -1 })
       .lean();
 
     return ok({
       member: decorateMember(member),
-      payments: payments.map((p) => ({ ...p, _id: p._id.toString() })),
+      payments: decoratePayments(payments, member),
     });
   } catch (err) {
     return fail("Unable to load member", "MEMBER_FETCH_FAILED", 500);
   }
+}
+
+/**
+ * Annotate a member's bills for the UI.
+ *
+ * `canVoid` and `voidPreview` are resolved on the SERVER so the bill actions and
+ * the confirmation dialog show exactly what the void route will do — the client
+ * never re-implements the rule. Only the newest non-voided bill is reversible in
+ * isolation: anything older has later renewals stacked on top of it, and
+ * reversing those in isolation would corrupt the current expiry.
+ *
+ * `payments` must arrive newest-first, ordered by creation (see the void route:
+ * paymentDate is admin-entered and can be backdated, so it must not decide
+ * which bill is the latest).
+ */
+function decoratePayments(payments, member) {
+  const firstActiveIdx = payments.findIndex((p) => p.status !== PAYMENT_VOIDED);
+
+  return payments.map((p, idx) => {
+    const base = {
+      ...p,
+      _id: p._id.toString(),
+      memberId: p.memberId?.toString?.() ?? p.memberId,
+      // Bills created before the void feature existed carry no status.
+      status: p.status === PAYMENT_VOIDED ? PAYMENT_VOIDED : PAYMENT_ACTIVE,
+      canVoid: false,
+      voidPreview: null,
+    };
+
+    if (idx !== firstActiveIdx) return base;
+
+    // The most recent active bill in this member's history.
+    const priorPayment =
+      payments.slice(idx + 1).find((q) => q.status !== PAYMENT_VOIDED) || null;
+    const assessment = assessVoidability({
+      payment: p,
+      member,
+      laterActiveCount: 0,
+      priorPayment,
+    });
+
+    return {
+      ...base,
+      canVoid: assessment.ok && !assessment.drifted,
+      voidBlockedReason: assessment.ok ? null : assessment.error,
+      voidPreview: assessment.revert
+        ? {
+            expiryFrom: utcDateOnly(p.newExpiry),
+            expiryTo: assessment.revert.planEndDate,
+            planDurationDays: assessment.revert.planDurationDays,
+            status: assessment.revert.status,
+            drifted: assessment.drifted,
+          }
+        : null,
+    };
+  });
 }
 
 // PUT /api/members/[id] — update name/phone/address/notes only.
