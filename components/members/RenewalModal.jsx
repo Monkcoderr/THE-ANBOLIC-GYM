@@ -10,6 +10,10 @@ import { cn } from "@/lib/utils";
 const PRESETS = [30, 60, 90, 180, 365];
 const PRESET_LABELS = { 30: "1M", 60: "2M", 90: "3M", 180: "6M", 365: "1Y" };
 
+function todayInput() {
+  return new Date().toISOString().slice(0, 10);
+}
+
 /**
  * RenewalModal — collect payment + duration, renew, then show the receipt.
  * Props: { member, gymName, onSuccess, onClose }
@@ -17,6 +21,7 @@ const PRESET_LABELS = { 30: "1M", 60: "2M", 90: "3M", 180: "6M", 365: "1Y" };
 export default function RenewalModal({ member, gymName, onSuccess, onClose }) {
   const [amount, setAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("Cash");
+  const [paymentDate, setPaymentDate] = useState(todayInput());
   const [duration, setDuration] = useState(30);
   const [customDuration, setCustomDuration] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -47,6 +52,14 @@ export default function RenewalModal({ member, gymName, onSuccess, onClose }) {
       setError("Choose a plan duration.");
       return;
     }
+    if (!paymentDate) {
+      setError("Enter the payment date.");
+      return;
+    }
+    if (paymentDate > todayInput()) {
+      setError("Payment date can't be in the future.");
+      return;
+    }
     setIsSubmitting(true);
     setError("");
     try {
@@ -57,6 +70,7 @@ export default function RenewalModal({ member, gymName, onSuccess, onClose }) {
           amount: amt,
           paymentMethod,
           planDurationDays: effectiveDuration,
+          paymentDate,
         }),
       });
       const json = await res.json();
@@ -141,6 +155,27 @@ export default function RenewalModal({ member, gymName, onSuccess, onClose }) {
                 </button>
               ))}
             </div>
+          </div>
+
+          <div>
+            <label
+              htmlFor="renewPaymentDate"
+              className="mb-1.5 block text-sm font-medium text-ink"
+            >
+              Payment date
+            </label>
+            <input
+              id="renewPaymentDate"
+              type="date"
+              value={paymentDate}
+              max={todayInput()}
+              onChange={(e) => setPaymentDate(e.target.value)}
+              className="h-11 w-full rounded-sm border border-hairline bg-canvas px-3 text-[15px] text-ink outline-none focus:border-primary"
+            />
+            <p className="mt-1.5 text-xs text-mute">
+              Shown on the receipt. The expiry below is set by the member&apos;s
+              billing day, so this date never changes it.
+            </p>
           </div>
 
           <div>

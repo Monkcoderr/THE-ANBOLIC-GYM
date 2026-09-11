@@ -11,6 +11,7 @@ import {
   utcDateOnly,
 } from "@/lib/dateUtils";
 import { generateReceiptText } from "@/lib/receiptFormatter";
+import { buildMemberSnapshot } from "@/lib/paymentRevert";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,11 @@ const RenewSchema = z.object({
     .number()
     .int()
     .positive("Plan duration must be positive"),
+  // When the money actually changed hands. Optional — defaults to now — and
+  // recorded on the bill only. It can never move the expiry: the billing day
+  // comes from the joining date, and the catch-up guard below deliberately uses
+  // the real clock, so backdating a receipt cannot produce a past expiry.
+  paymentDate: z.coerce.date().optional(),
 });
 
 // POST /api/members/renew/[id] — renew a plan + record payment + receipt.
@@ -41,6 +47,20 @@ export async function POST(request, { params }) {
     }
     const { amount, paymentMethod, planDurationDays } = parsed.data;
 
+    // A business date entered by the admin is stored date-only at UTC midnight,
+    // like every other business date. Omitted means "right now".
+    let paymentDate = new Date();
+    if (parsed.data.paymentDate) {
+      paymentDate = utcDateOnly(parsed.data.paymentDate);
+      if (paymentDate > utcDateOnly(new Date())) {
+        return fail(
+          "Payment date can't be in the future",
+          "VALIDATION_ERROR",
+          422
+        );
+      }
+    }
+
     const member = await Member.findOne({
       _id: params.id,
       isDeleted: { $ne: true },
@@ -49,6 +69,10 @@ export async function POST(request, { params }) {
 
     const currentStatus = computeMemberStatus(member.planEndDate);
     const previousExpiry = member.planEndDate;
+    // The member's exact state before this renewal touches anything. Stored on
+    // the payment so voiding the bill can restore it verbatim instead of
+    // inferring it from history. Captured here, before any mutation.
+    const memberSnapshot = buildMemberSnapshot(member);
 
     // The billing anchor is the member's authoritative joining date. It is READ
     // here and never written — a renewal must never change when someone joined.
@@ -66,7 +90,6 @@ export async function POST(request, { params }) {
 
     const gymName = session.gymName || (await Admin.findOne().lean())?.gymName || "Gym";
 
-    const paymentDate = new Date();
     const receiptText = generateReceiptText(
       { name: member.name, phone: member.phone },
       { amount, paymentMethod, paymentDate, newExpiry },
@@ -85,6 +108,8 @@ export async function POST(request, { params }) {
       previousExpiry,
       newExpiry,
       receiptText,
+      status: "active",
+      memberSnapshot,
     });
 
     member.planEndDate = newExpiry;

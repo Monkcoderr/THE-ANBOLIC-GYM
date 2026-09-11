@@ -137,7 +137,13 @@ if (ROLLBACK_FILE) {
 }
 
 const members = await membersCol.find({ isDeleted: { $ne: true } }).toArray();
-const payments = await paymentsCol.find({}).toArray();
+// Voided bills are corrections that were reversed, so they never contributed a
+// billing month. Counting them would double-charge the member's expiry. `$ne` is
+// used rather than `status: "active"` because bills recorded before the void
+// feature existed carry no status field at all.
+const payments = await paymentsCol
+  .find({ status: { $ne: "voided" } })
+  .toArray();
 
 const paymentsByMember = new Map();
 for (const p of payments) {

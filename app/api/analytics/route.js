@@ -3,6 +3,7 @@ import Payment from "@/models/Payment";
 import Member from "@/models/Member";
 import { ok, fail, requireAuth } from "@/lib/apiResponse";
 import { computeMemberStatus, getMonthLabel } from "@/lib/dateUtils";
+import { NOT_VOIDED } from "@/lib/paymentRevert";
 import { subMonths, startOfMonth } from "date-fns";
 
 export const dynamic = "force-dynamic";
@@ -15,10 +16,13 @@ export async function GET() {
   try {
     await connectDB();
 
-    // Part 1 — monthly revenue for the last 6 months.
+    // Part 1 — monthly revenue for the last 6 months. Voided bills are
+    // excluded: a voided bill is a correction, not income. NOT_VOIDED is a
+    // `$ne` test rather than `status: "active"` so bills recorded before the
+    // void feature existed (no status field) still count.
     const since = startOfMonth(subMonths(new Date(), 5));
     const revenueAgg = await Payment.aggregate([
-      { $match: { paymentDate: { $gte: since } } },
+      { $match: { paymentDate: { $gte: since }, ...NOT_VOIDED } },
       {
         $group: {
           _id: {

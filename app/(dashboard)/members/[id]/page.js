@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import useSWR from "swr";
+import useSWR, { mutate as globalMutate } from "swr";
 import {
   Phone,
   MapPin,
@@ -12,11 +12,14 @@ import {
   Pencil,
   Trash2,
   CalendarDays,
+  CheckCircle2,
+  X,
 } from "lucide-react";
 import TopBar from "@/components/layout/TopBar";
 import StatusBadge from "@/components/dashboard/StatusBadge";
 import PaymentHistory from "@/components/members/PaymentHistory";
 import RenewalModal from "@/components/members/RenewalModal";
+import VoidBillSheet from "@/components/members/VoidBillSheet";
 import WhatsAppButton from "@/components/whatsapp/WhatsAppButton";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { ErrorState, CardSkeleton } from "@/components/ui/States";
@@ -37,6 +40,26 @@ export default function MemberDetailPage({ params }) {
   const [renewing, setRenewing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [voidingBill, setVoidingBill] = useState(null);
+  const [voidResult, setVoidResult] = useState(null);
+
+  /**
+   * A void changes the member's expiry and removes money from revenue, so every
+   * cached list and the analytics summary have to be refreshed — not just this
+   * page.
+   */
+  async function handleVoided(result) {
+    setVoidingBill(null);
+    setVoidResult(result);
+    await mutate();
+    globalMutate(
+      (key) =>
+        typeof key === "string" &&
+        (key.startsWith("/api/members") || key.startsWith("/api/analytics")),
+      undefined,
+      { revalidate: true }
+    );
+  }
 
   async function handleDelete() {
     setDeleting(true);
@@ -166,7 +189,54 @@ export default function MemberDetailPage({ params }) {
               <h3 className="mb-3 font-mono text-xs uppercase tracking-wide text-mute">
                 Payment history
               </h3>
-              <PaymentHistory payments={payments} />
+
+              {/* Post-void confirmation, with the obvious next step. */}
+              {voidResult && (
+                <div className="mb-3 flex items-start gap-3 rounded-md bg-cyan/15 px-4 py-3">
+                  <CheckCircle2
+                    className="mt-0.5 h-5 w-5 shrink-0 text-cyan-deep"
+                    aria-hidden="true"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-cyan-deep">
+                      Bill voided.
+                      {voidResult.revertedMembership && voidResult.revertedTo
+                        ? ` Membership restored to expire ${formatDisplayDate(
+                            voidResult.revertedTo.planEndDate
+                          )}.`
+                        : " The membership was left unchanged."}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setVoidResult(null);
+                        setRenewing(true);
+                      }}
+                      className="btn-gradient mt-3 inline-flex h-9 items-center gap-1.5 rounded-pill px-4 text-sm font-medium transition active:scale-[0.98]"
+                    >
+                      <RefreshCw className="h-4 w-4" aria-hidden="true" />
+                      Renew again
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setVoidResult(null)}
+                    aria-label="Dismiss"
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-cyan-deep transition hover:bg-canvas-soft-2"
+                  >
+                    <X className="h-4 w-4" aria-hidden="true" />
+                  </button>
+                </div>
+              )}
+
+              <PaymentHistory
+                payments={payments}
+                onVoid={setVoidingBill}
+                onRenewAgain={() => {
+                  setVoidResult(null);
+                  setRenewing(true);
+                }}
+              />
             </section>
           </>
         )}
@@ -177,9 +247,28 @@ export default function MemberDetailPage({ params }) {
           member={member}
           gymName={gymName}
           onClose={() => setRenewing(false)}
-          onSuccess={() => mutate()}
+          onSuccess={async () => {
+            await mutate();
+            globalMutate(
+              (key) =>
+                typeof key === "string" &&
+                (key.startsWith("/api/members") ||
+                  key.startsWith("/api/analytics")),
+              undefined,
+              { revalidate: true }
+            );
+          }}
         />
       )}
+
+      <VoidBillSheet
+        open={!!voidingBill}
+        payment={voidingBill}
+        memberId={params.id}
+        memberName={member?.name || "this member"}
+        onClose={() => setVoidingBill(null)}
+        onVoided={handleVoided}
+      />
 
       <ConfirmDialog
         open={confirmDelete}
