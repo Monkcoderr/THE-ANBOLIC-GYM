@@ -2,7 +2,11 @@
 
 import { useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { computeMemberStatus, formatDisplayDate } from "@/lib/dateUtils";
+import {
+  businessDateInput,
+  computeMemberStatus,
+  formatDisplayDate,
+} from "@/lib/dateUtils";
 import { cn } from "@/lib/utils";
 import { Field, inputCls } from "@/components/ui/form";
 
@@ -21,7 +25,7 @@ const STATUS_LABEL = {
 };
 
 function todayInput() {
-  return new Date().toISOString().slice(0, 10);
+  return businessDateInput();
 }
 
 /**

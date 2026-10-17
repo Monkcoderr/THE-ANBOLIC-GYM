@@ -136,6 +136,10 @@ function voidBill(member, payments, paymentId, { voidOnly = false } = {}) {
   const laterActiveCount = payments.filter(
     (p) => !isVoided(p) && p.order > payment.order
   ).length;
+  const priorRecordedPayment =
+    payments
+      .filter((p) => p.order < payment.order)
+      .sort((a, b) => b.order - a.order)[0] || null;
   const priorPayment =
     payments
       .filter((p) => !isVoided(p) && p.order < payment.order)
@@ -146,6 +150,7 @@ function voidBill(member, payments, paymentId, { voidOnly = false } = {}) {
     member,
     laterActiveCount,
     priorPayment,
+    priorRecordedPayment,
   });
 
   const applyToMember = !voidOnly && assessment.ok && !assessment.drifted;
@@ -359,7 +364,7 @@ test("E — an older bill with later renewals is refused, not blindly reverted",
   assert.equal(out.payments[0].status, "active", "and the bill must stay active");
 });
 
-test("E — voidOnly removes the money without touching the membership", () => {
+test("E — historical voidOnly behavior can leave money removed while coverage remains", () => {
   const m0 = makeMember();
   const r1 = applyRenewal(m0, { amount: 1000, planDurationDays: 30 });
   const r2 = applyRenewal(r1.member, { amount: 1000, planDurationDays: 30 });
@@ -376,6 +381,76 @@ test("E — voidOnly removes the money without touching the membership", () => {
     "membership untouched — only revenue changes"
   );
   assert.equal(out.payments[0].revertedTo.appliedToMember, false);
+});
+
+test("E — #1704: a newer bill cannot restore coverage from a now-voided predecessor", () => {
+  const initial = {
+    _id: "member-1704",
+    name: "Mohd Azeem",
+    phone: "7500503944",
+    joinDate: d("2026-07-13"),
+    planStartDate: d("2026-07-13"),
+    planEndDate: d("2026-08-13"),
+    planDurationDays: 30,
+    status: "expired",
+    miaFlagged: true,
+  };
+  const first = applyRenewal(initial, {
+    amount: 600,
+    paymentMethod: "UPI",
+    planDurationDays: 30,
+    paymentDate: d("2026-10-13"),
+  });
+  const second = applyRenewal(first.member, {
+    amount: 600,
+    paymentMethod: "Cash",
+    planDurationDays: 30,
+    paymentDate: d("2026-10-05"),
+  });
+  assert.equal(s(first.member.planEndDate), "13-Nov-2026");
+  assert.equal(s(second.member.planEndDate), "13-Dec-2026");
+
+  // Reproduce the historical unsafe operation: the older payment is marked
+  // voided while the newer payment leaves its coverage in the member state.
+  const oldVoid = voidBill(
+    second.member,
+    [first.payment, second.payment],
+    first.payment._id,
+    { voidOnly: true }
+  );
+  const correctedAnchorMember = {
+    ...oldVoid.member,
+    joinDate: d("2026-09-05"),
+  };
+
+  const attempt = voidBill(
+    correctedAnchorMember,
+    oldVoid.payments,
+    second.payment._id
+  );
+  assert.equal(attempt.ok, false);
+  assert.equal(attempt.code, "VOIDED_PREDECESSOR");
+  assert.equal(
+    s(attempt.member.planEndDate),
+    "13-Dec-2026",
+    "unsafe snapshot must not restore the first voided payment's 13-Nov coverage"
+  );
+});
+
+test("E — reconciled historical payments require manual void review", () => {
+  const member = makeMember();
+  const renewal = applyRenewal(member, { amount: 600, planDurationDays: 30 });
+  renewal.payment.reconciliation = {
+    entitlementStart: member.planEndDate,
+    entitlementEnd: renewal.member.planEndDate,
+    requiresManualVoid: true,
+  };
+  const assessment = assessVoidability({
+    payment: renewal.payment,
+    member: renewal.member,
+  });
+  assert.equal(assessment.ok, false);
+  assert.equal(assessment.code, "MANUAL_RECONCILIATION_REQUIRED");
 });
 
 test("E — a membership changed outside the renewal flow is detected as drift", () => {
@@ -410,24 +485,20 @@ test("E — an already-voided bill cannot be voided twice", () => {
 
 /* ── Scenario F: nothing partial ever gets written ──────────────────────── */
 
-test("F — the void route is atomic: one transaction, guarded writes, and compensation", () => {
+test("F — the void route is transaction-only with guarded member and payment writes", () => {
   const src = readFileSync(
     pathJoin(ROOT, "app/api/members/[id]/payments/[paymentId]/void/route.js"),
     "utf8"
   );
-  // Both writes run inside a single transaction where the deployment allows it.
   assert.match(src, /startSession\(\)/, "must open a session");
   assert.match(src, /withTransaction\(/, "must wrap both writes in one transaction");
   assert.match(src, /\{ session \}/, "both writes must join the session");
-  // Every write is guarded, so a stale read can never overwrite newer data.
-  assert.match(src, /paymentGuard/, "the payment write must be guarded");
-  assert.match(src, /memberGuard/, "the member write must be guarded");
-  assert.match(src, /status: \{ \$ne: PAYMENT_VOIDED \}/, "the payment guard must block double-voids");
-  // The no-transaction fallback must undo the member write if the void fails.
-  assert.match(src, /undoMember/, "the fallback must compensate the member write");
-  assert.match(src, /isTransactionUnsupported/, "the fallback must only trigger on unsupported transactions");
-  // A failure must never be reported as a partial success.
-  assert.match(src, /Nothing was changed/, "the error message must state that nothing changed");
+  assert.match(src, /memberWrite/, "the member write must be guarded");
+  assert.match(src, /paymentWrite/, "the payment write must be guarded");
+  assert.match(src, /status: \{ \$ne: PAYMENT_VOIDED \}/, "double voids must be blocked");
+  assert.match(src, /__v: member\.__v \|\| 0/, "member version must guard concurrency");
+  assert.doesNotMatch(src, /undoMember|isTransactionUnsupported/, "no compensating fallback is allowed");
+  assert.match(src, /Nothing was changed/, "failure must report no change");
 });
 
 test("F — a bill with no recorded prior state is refused rather than guessed at", () => {
@@ -548,9 +619,9 @@ test("the renewal route records a snapshot so future voids are exact", () => {
     "utf8"
   );
   assert.match(src, /buildMemberSnapshot\(member\)/, "must snapshot the member");
-  // Taken BEFORE the mutations, or it would record the post-renewal state.
+  // Taken before the transaction's guarded member write.
   const snapAt = src.indexOf("buildMemberSnapshot(member)");
-  const mutateAt = src.indexOf("member.planEndDate = newExpiry");
+  const mutateAt = src.indexOf("const memberWrite = await Member.updateOne");
   assert.ok(snapAt !== -1 && mutateAt !== -1);
   assert.ok(snapAt < mutateAt, "the snapshot must be captured before any mutation");
   assert.match(src, /memberSnapshot,/, "and stored on the payment");
@@ -567,6 +638,25 @@ test("an admin-entered payment date can never reach the expiry calculation", () 
   const call = src.match(/computeRenewalExpiry\(([\s\S]*?)\);/);
   assert.ok(call, "the route must compute the expiry");
   assert.doesNotMatch(call[1], /paymentDate/, "paymentDate must not be an argument");
+});
+
+test("the void API forbids financial-only renewal voids", () => {
+  const route = readFileSync(
+    pathJoin(ROOT, "app/api/members/[id]/payments/[paymentId]/void/route.js"),
+    "utf8"
+  );
+  assert.match(route, /FINANCIAL_ONLY_VOID_FORBIDDEN/);
+  assert.match(route, /priorRecordedPayment/);
+  const sheet = readFileSync(
+    pathJoin(ROOT, "components/members/VoidBillSheet.jsx"),
+    "utf8"
+  );
+  assert.doesNotMatch(sheet, /voidOnly:/, "the client must never request an unsafe void");
+  const history = readFileSync(
+    pathJoin(ROOT, "components/members/PaymentHistory.jsx"),
+    "utf8"
+  );
+  assert.match(history, /p\.canVoid && onVoid/, "blocked bills must expose no delete action");
 });
 
 test("voided bills are excluded from revenue and from the billing migration", () => {

@@ -59,6 +59,10 @@ export default function VoidBillSheet({
   }
 
   async function submit() {
+    if (!reason.trim()) {
+      setError("Enter a reason for voiding this bill.");
+      return;
+    }
     setSubmitting(true);
     setError("");
     try {
@@ -67,12 +71,7 @@ export default function VoidBillSheet({
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            reason: reason.trim(),
-            // Blocked bills are voided financially only — never guess at a
-            // membership revert the server refused.
-            voidOnly: !canRevert,
-          }),
+          body: JSON.stringify({ reason: reason.trim() }),
         }
       );
       const json = await res.json().catch(() => ({}));
@@ -156,12 +155,11 @@ export default function VoidBillSheet({
               aria-hidden="true"
             />
             <div className="text-sm text-warning-deep">
-              <p className="font-medium">The membership will not be changed.</p>
+              <p className="font-medium">Automatic void is blocked.</p>
               <p className="mt-1">
                 {payment.voidBlockedReason ||
-                  "This bill can't be reversed on its own."}{" "}
-                The expiry date stays as it is now, and only the money is
-                removed from your revenue.
+                  "This bill cannot be reversed confidently."} Membership and
+                payment status will remain unchanged; reconcile it manually.
               </p>
             </div>
           </div>
@@ -172,7 +170,7 @@ export default function VoidBillSheet({
             htmlFor="voidReason"
             className="mb-1.5 block text-sm font-medium text-ink"
           >
-            Reason (optional)
+            Reason
           </label>
           <textarea
             id="voidReason"
@@ -206,7 +204,7 @@ export default function VoidBillSheet({
           <button
             type="button"
             onClick={submit}
-            disabled={submitting}
+            disabled={submitting || !canRevert}
             className={cn(
               "flex h-11 flex-1 items-center justify-center gap-2 rounded-pill bg-error text-sm font-medium text-white transition active:scale-[0.99] disabled:opacity-50"
             )}
@@ -216,7 +214,7 @@ export default function VoidBillSheet({
             ) : (
               <Ban className="h-4 w-4" aria-hidden="true" />
             )}
-            {canRevert ? "Delete & revert" : "Void bill only"}
+            {canRevert ? "Delete & revert" : "Manual review required"}
           </button>
         </div>
       </div>

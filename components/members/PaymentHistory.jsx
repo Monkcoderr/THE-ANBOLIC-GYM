@@ -95,6 +95,7 @@ export default function PaymentHistory({
       {payments.map((p) => {
         const open = openId === p._id;
         const voided = p.status === "voided";
+        const reconciled = !!p.reconciliation;
         return (
           <li
             key={p._id}
@@ -139,6 +140,11 @@ export default function PaymentHistory({
                       Voided
                     </span>
                   )}
+                  {!voided && reconciled && (
+                    <span className="ml-1 inline-flex items-center rounded-full bg-warning-soft px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-warning-deep">
+                      Reconciled
+                    </span>
+                  )}
                 </p>
                 <p
                   className={cn(
@@ -147,7 +153,14 @@ export default function PaymentHistory({
                   )}
                 >
                   {formatDisplayDate(p.paymentDate)} · {p.planDurationDays} days
-                  → {formatDisplayDate(p.newExpiry)}
+                  {reconciled ? (
+                    <>
+                      {" "}· entitlement {formatDisplayDate(p.reconciliation.entitlementStart)}
+                      {" → "}{formatDisplayDate(p.reconciliation.entitlementEnd)}
+                    </>
+                  ) : (
+                    <> → {formatDisplayDate(p.newExpiry)}</>
+                  )}
                 </p>
               </div>
               <ChevronDown
@@ -183,6 +196,18 @@ export default function PaymentHistory({
                   </div>
                 )}
 
+                {reconciled && (
+                  <div className="mb-3 rounded-md bg-warning-soft/70 px-3 py-2.5 text-xs text-warning-deep">
+                    <p className="font-medium">Historical entitlement reconciled.</p>
+                    <p className="mt-1">
+                      Counts from {formatDisplayDate(p.reconciliation.entitlementStart)}
+                      {" through "}{formatDisplayDate(p.reconciliation.entitlementEnd)}.
+                      The original receipt and prior void audit remain unchanged.
+                    </p>
+                    <p className="mt-1">Automatic voiding is disabled; manual review is required.</p>
+                  </div>
+                )}
+
                 {p.receiptText && (
                   <pre className="mb-3 whitespace-pre-wrap break-words rounded-md bg-canvas-soft-2 px-3 py-3 font-mono text-[12px] leading-5 text-ink">
                     {p.receiptText}
@@ -215,7 +240,7 @@ export default function PaymentHistory({
                     <Download className="h-4 w-4" aria-hidden="true" />
                     Download
                   </button>
-                  {!voided && onVoid && (
+                  {!voided && p.canVoid && onVoid && (
                     <button
                       type="button"
                       onClick={() => onVoid(p)}

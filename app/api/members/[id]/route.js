@@ -4,7 +4,12 @@ import Member from "@/models/Member";
 import Payment from "@/models/Payment";
 import { ok, fail, requireAuth } from "@/lib/apiResponse";
 import { decorateMember } from "@/lib/memberUtils";
-import { utcDateOnly } from "@/lib/dateUtils";
+import {
+  computeMemberStatus,
+  getDaysSinceExpiry,
+  rebaseExpiryToJoinDate,
+  utcDateOnly,
+} from "@/lib/dateUtils";
 import { digitsOnly, normalizeMemberId } from "@/lib/utils";
 import {
   assessVoidability,
@@ -19,6 +24,10 @@ const UpdateSchema = z.object({
   phone: z.string().min(10).optional(),
   customMemberId: z.string().trim().max(40, "ID is too long").optional(),
   joinDate: z.coerce.date().optional(),
+  // Required when changing the permanent anchor. Prevents API callers from
+  // silently moving joinDate without acknowledging the matching expiry rebase.
+  reconcileExpiry: z.boolean().optional(),
+  joinDateReason: z.string().trim().max(300).optional(),
   address: z.string().optional(),
   notes: z.string().optional(),
 });
@@ -79,6 +88,7 @@ function decoratePayments(payments, member) {
     if (idx !== firstActiveIdx) return base;
 
     // The most recent active bill in this member's history.
+    const priorRecordedPayment = payments[idx + 1] || null;
     const priorPayment =
       payments.slice(idx + 1).find((q) => q.status !== PAYMENT_VOIDED) || null;
     const assessment = assessVoidability({
@@ -86,12 +96,17 @@ function decoratePayments(payments, member) {
       member,
       laterActiveCount: 0,
       priorPayment,
+      priorRecordedPayment,
     });
 
     return {
       ...base,
       canVoid: assessment.ok && !assessment.drifted,
-      voidBlockedReason: assessment.ok ? null : assessment.error,
+      voidBlockedReason: assessment.drifted
+        ? "The membership has changed since this bill was created, so it requires manual reconciliation."
+        : assessment.ok
+          ? null
+          : assessment.error,
       voidPreview: assessment.revert
         ? {
             expiryFrom: utcDateOnly(p.newExpiry),
@@ -107,7 +122,7 @@ function decoratePayments(payments, member) {
 
 // PUT /api/members/[id] — update name/phone/address/notes only.
 export async function PUT(request, { params }) {
-  const { response } = await requireAuth();
+  const { response, session: auth } = await requireAuth();
   if (response) return response;
 
   try {
@@ -122,18 +137,79 @@ export async function PUT(request, { params }) {
       );
     }
 
+    const memberGuard = {
+      _id: params.id,
+      isDeleted: { $ne: true },
+    };
+    const existingMember = await Member.findOne(memberGuard).lean();
+    if (!existingMember) return fail("Member not found", "NOT_FOUND", 404);
+
+    let anchorChanged = false;
+    let billingAudit = null;
     const update = {};
     const unset = {};
     if (parsed.data.name !== undefined) update.name = parsed.data.name;
     if (parsed.data.address !== undefined) update.address = parsed.data.address;
     if (parsed.data.notes !== undefined) update.notes = parsed.data.notes;
-    // Joining date is the permanent billing anchor and the ONLY place it may be
-    // changed. Stored as a date-only UTC value like every other business date.
-    // Changing it re-bases every future renewal onto the new day-of-month (the
-    // next renewal re-anchors the expiry); the current expiry is left untouched
-    // so an admin correcting a typo cannot accidentally alter a paid-up period.
-    if (parsed.data.joinDate !== undefined)
-      update.joinDate = utcDateOnly(parsed.data.joinDate);
+
+    if (parsed.data.joinDate !== undefined) {
+      const correctedJoin = utcDateOnly(parsed.data.joinDate);
+      const currentJoin = utcDateOnly(
+        existingMember.joinDate || existingMember.planStartDate
+      );
+      const changed = correctedJoin.getTime() !== currentJoin.getTime();
+
+      if (changed) {
+        anchorChanged = true;
+        memberGuard.joinDate = existingMember.joinDate;
+        memberGuard.planEndDate = existingMember.planEndDate;
+        if (parsed.data.reconcileExpiry !== true) {
+          return fail(
+            "Changing the joining date also changes the billing anchor. Confirm the matching expiry reconciliation.",
+            "EXPIRY_RECONCILIATION_REQUIRED",
+            409
+          );
+        }
+
+        if (!parsed.data.joinDateReason?.trim()) {
+          return fail(
+            "A reason is required to correct the permanent joining-date anchor.",
+            "ANCHOR_REASON_REQUIRED",
+            422
+          );
+        }
+        const rebased = rebaseExpiryToJoinDate(
+          currentJoin,
+          existingMember.planEndDate,
+          correctedJoin
+        );
+        if (!rebased) {
+          return fail(
+            "The current expiry is already off its billing anchor, so the paid cycle count cannot be established safely. Reconcile this member manually.",
+            "MANUAL_RECONCILIATION_REQUIRED",
+            409
+          );
+        }
+
+        const status = computeMemberStatus(rebased.expiry);
+        update.joinDate = correctedJoin;
+        update.planEndDate = rebased.expiry;
+        update.status = status;
+        update.miaFlagged =
+          status === "expired" && getDaysSinceExpiry(rebased.expiry) >= 7;
+        billingAudit = {
+          type: "anchor_reconciliation",
+          previousJoinDate: currentJoin,
+          newJoinDate: correctedJoin,
+          previousExpiry: existingMember.planEndDate,
+          newExpiry: rebased.expiry,
+          paidMonthsPreserved: rebased.paidMonths,
+          reason: parsed.data.joinDateReason.trim(),
+          changedBy: auth?.adminId || null,
+          changedAt: new Date(),
+        };
+      }
+    }
     if (parsed.data.phone !== undefined) {
       const phone = digitsOnly(parsed.data.phone);
       if (phone.length < 10) {
@@ -172,14 +248,22 @@ export async function PUT(request, { params }) {
     const mutation = {};
     if (Object.keys(update).length) mutation.$set = update;
     if (Object.keys(unset).length) mutation.$unset = unset;
+    if (billingAudit) mutation.$push = { billingAudit };
 
-    const member = await Member.findOneAndUpdate(
-      { _id: params.id, isDeleted: { $ne: true } },
-      mutation,
-      { new: true }
-    ).lean();
+    const member = await Member.findOneAndUpdate(memberGuard, mutation, {
+      new: true,
+    }).lean();
 
-    if (!member) return fail("Member not found", "NOT_FOUND", 404);
+    if (!member) {
+      if (anchorChanged) {
+        return fail(
+          "The membership changed while its billing anchor was being reconciled. Reload and try again.",
+          "MEMBER_STATE_DRIFTED",
+          409
+        );
+      }
+      return fail("Member not found", "NOT_FOUND", 404);
+    }
     return ok(decorateMember(member));
   } catch (err) {
     if (err?.code === 11000) {

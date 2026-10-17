@@ -1,17 +1,21 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { Loader2, CheckCircle2 } from "lucide-react";
 import BottomSheet from "@/components/ui/BottomSheet";
 import ReceiptGenerator from "@/components/members/ReceiptGenerator";
-import { computeRenewalExpiry, formatDisplayDate } from "@/lib/dateUtils";
+import {
+  businessDateInput,
+  computeRenewalExpiry,
+  formatDisplayDate,
+} from "@/lib/dateUtils";
 import { cn } from "@/lib/utils";
 
 const PRESETS = [30, 60, 90, 180, 365];
 const PRESET_LABELS = { 30: "1M", 60: "2M", 90: "3M", 180: "6M", 365: "1Y" };
 
 function todayInput() {
-  return new Date().toISOString().slice(0, 10);
+  return businessDateInput();
 }
 
 /**
@@ -23,14 +27,13 @@ export default function RenewalModal({ member, gymName, onSuccess, onClose }) {
   const [paymentMethod, setPaymentMethod] = useState("Cash");
   const [paymentDate, setPaymentDate] = useState(todayInput());
   const [duration, setDuration] = useState(30);
-  const [customDuration, setCustomDuration] = useState("");
+  const renewalKey = useRef(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [receipt, setReceipt] = useState(null);
+  const [renewedUntil, setRenewedUntil] = useState(null);
 
-  const effectiveDuration = customDuration
-    ? parseInt(customDuration, 10)
-    : duration;
+  const effectiveDuration = duration;
 
   const newExpiry = useMemo(() => {
     if (!effectiveDuration || effectiveDuration <= 0) return null;
@@ -62,6 +65,7 @@ export default function RenewalModal({ member, gymName, onSuccess, onClose }) {
     }
     setIsSubmitting(true);
     setError("");
+    renewalKey.current ||= crypto.randomUUID();
     try {
       const res = await fetch(`/api/members/renew/${member._id}`, {
         method: "POST",
@@ -71,6 +75,7 @@ export default function RenewalModal({ member, gymName, onSuccess, onClose }) {
           paymentMethod,
           planDurationDays: effectiveDuration,
           paymentDate,
+          idempotencyKey: renewalKey.current,
         }),
       });
       const json = await res.json();
@@ -80,6 +85,7 @@ export default function RenewalModal({ member, gymName, onSuccess, onClose }) {
         return;
       }
       setReceipt(json.data.receiptText);
+      setRenewedUntil(json.data.member?.planEndDate || newExpiry);
       setIsSubmitting(false);
     } catch {
       setError("Network error. Please try again.");
@@ -104,7 +110,7 @@ export default function RenewalModal({ member, gymName, onSuccess, onClose }) {
           <div className="flex items-center gap-2 rounded-md bg-cyan/15 px-4 py-3 text-cyan-deep">
             <CheckCircle2 className="h-5 w-5" aria-hidden="true" />
             <p className="text-sm font-medium">
-              Renewed until {formatDisplayDate(newExpiry)}
+              Renewed until {formatDisplayDate(renewedUntil || newExpiry)}
             </p>
           </div>
           <ReceiptGenerator receiptText={receipt} phone={member.phone} />
@@ -187,13 +193,10 @@ export default function RenewalModal({ member, gymName, onSuccess, onClose }) {
                 <button
                   key={d}
                   type="button"
-                  onClick={() => {
-                    setDuration(d);
-                    setCustomDuration("");
-                  }}
+                  onClick={() => setDuration(d)}
                   className={cn(
                     "h-9 rounded-pill px-4 text-sm font-medium transition",
-                    !customDuration && duration === d
+                    duration === d
                       ? "btn-gradient"
                       : "border border-hairline bg-canvas text-ink hover:bg-canvas-soft-2"
                   )}
@@ -202,14 +205,6 @@ export default function RenewalModal({ member, gymName, onSuccess, onClose }) {
                 </button>
               ))}
             </div>
-            <input
-              type="number"
-              min="1"
-              value={customDuration}
-              onChange={(e) => setCustomDuration(e.target.value)}
-              placeholder="Custom days"
-              className="mt-2 h-11 w-full rounded-sm border border-hairline bg-canvas px-3 text-[15px] text-ink outline-none placeholder:text-mute focus:border-primary"
-            />
           </div>
 
           {newExpiry && (

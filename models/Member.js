@@ -1,14 +1,24 @@
 import mongoose from "mongoose";
 
+const BillingAuditSchema = new mongoose.Schema(
+  {
+    type: { type: String, enum: ["anchor_reconciliation"], required: true },
+    previousJoinDate: { type: Date, required: true },
+    newJoinDate: { type: Date, required: true },
+    previousExpiry: { type: Date, required: true },
+    newExpiry: { type: Date, required: true },
+    paidMonthsPreserved: { type: Number, required: true },
+    reason: { type: String, required: true },
+    changedBy: { type: String, default: null },
+    changedAt: { type: Date, required: true },
+  },
+  { _id: true }
+);
+
 const MemberSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
-    // Admin-assigned human-friendly ID (e.g. "GYM-001"). Optional so existing
-    // members keep working until an ID is assigned. Uniqueness is enforced by
-    // a sparse index below — members without an ID are simply skipped.
     customMemberId: { type: String, trim: true, default: undefined },
-    // Uniqueness is enforced by a PARTIAL index below (active members only) so
-    // a soft-deleted member's phone can be re-used when re-adding them.
     phone: { type: String, required: true },
     planDurationDays: { type: Number, required: true },
     planStartDate: { type: Date, required: true },
@@ -22,30 +32,18 @@ const MemberSchema = new mongoose.Schema(
     notes: { type: String, default: "" },
     miaFlagged: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false },
-    // The authoritative joining date and the member's permanent billing day.
-    // Deliberately has NO default: it must always be an explicit business fact.
-    // It previously defaulted to Date.now, which silently replaced the joining
-    // date the admin typed with the day the record happened to be created, and
-    // corrupted the billing day of 84 members. Renewals must never write it —
-    // only an explicit admin edit may change it.
     joinDate: { type: Date, required: true },
+    billingAudit: { type: [BillingAuditSchema], default: undefined },
   },
   { timestamps: true }
 );
 
 MemberSchema.index({ status: 1 });
 MemberSchema.index({ planEndDate: 1 });
-// Partial + unique: only NON-deleted members are indexed, so a phone number
-// stays unique among active records while a soft-deleted member's number can
-// be re-used if that person is re-added later. syncIndexes() migrates the old
-// blanket unique index to this one automatically on connect.
 MemberSchema.index(
   { phone: 1 },
   { unique: true, partialFilterExpression: { isDeleted: false } }
 );
-// Sparse + unique: only documents that actually carry a customMemberId are
-// indexed, so any number of members can exist without one while assigned IDs
-// stay globally unique.
 MemberSchema.index({ customMemberId: 1 }, { unique: true, sparse: true });
 
 export default mongoose.models.Member || mongoose.model("Member", MemberSchema);

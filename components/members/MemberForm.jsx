@@ -2,7 +2,12 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { Loader2 } from "lucide-react";
-import { computeInitialExpiry, formatDisplayDate } from "@/lib/dateUtils";
+import {
+  businessDateInput,
+  computeInitialExpiry,
+  formatDisplayDate,
+  rebaseExpiryToJoinDate,
+} from "@/lib/dateUtils";
 import { cn } from "@/lib/utils";
 import { Field, inputCls } from "@/components/ui/form";
 
@@ -15,7 +20,7 @@ const PRESETS = [
 ];
 
 function todayInput() {
-  return new Date().toISOString().slice(0, 10);
+  return businessDateInput();
 }
 
 /** "05" → "5th", for the fixed renewal-day hint. */
@@ -87,7 +92,6 @@ export default function MemberForm({
   const [planDurationDays, setPlanDurationDays] = useState(
     initialData.planDurationDays || 30
   );
-  const [customDuration, setCustomDuration] = useState("");
   const [planStartDate, setPlanStartDate] = useState(
     initialData.planStartDate
       ? new Date(initialData.planStartDate).toISOString().slice(0, 10)
@@ -100,11 +104,10 @@ export default function MemberForm({
   );
   const [address, setAddress] = useState(initialData.address || "");
   const [notes, setNotes] = useState(initialData.notes || "");
+  const [joinDateReason, setJoinDateReason] = useState("");
   const [errors, setErrors] = useState({});
 
-  const effectiveDuration = customDuration
-    ? parseInt(customDuration, 10)
-    : planDurationDays;
+  const effectiveDuration = planDurationDays;
 
   const endPreview = useMemo(() => {
     if (!effectiveDuration || effectiveDuration <= 0) return null;
@@ -116,6 +119,20 @@ export default function MemberForm({
     }
   }, [planStartDate, effectiveDuration]);
 
+  const initialJoinIso = initialData.joinDate
+    ? new Date(initialData.joinDate).toISOString().slice(0, 10)
+    : "";
+  const joinChanged =
+    editJoinDate && Boolean(initialJoinIso) && joinDate !== initialJoinIso;
+  const anchorRebase = useMemo(() => {
+    if (!joinChanged || !initialData.planEndDate) return null;
+    return rebaseExpiryToJoinDate(
+      initialData.joinDate || initialData.planStartDate,
+      initialData.planEndDate,
+      joinDate
+    );
+  }, [initialData.joinDate, initialData.planStartDate, initialData.planEndDate, joinChanged, joinDate]);
+
   function validate() {
     const e = {};
     if (!name.trim()) e.name = "Name is required.";
@@ -124,6 +141,11 @@ export default function MemberForm({
     if (!lockPlanFields && (!effectiveDuration || effectiveDuration <= 0))
       e.duration = "Choose a plan duration.";
     if (editJoinDate && !joinDate) e.joinDate = "Joining date is required.";
+    if (joinChanged && !joinDateReason.trim())
+      e.joinDateReason = "Enter a reason for changing the permanent billing anchor.";
+    if (joinChanged && !anchorRebase)
+      e.joinDate =
+        "Current expiry is already off-anchor. This member needs manual reconciliation.";
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -148,7 +170,11 @@ export default function MemberForm({
     };
     // Joining date is only editable on the edit screen; it's the permanent
     // billing anchor every future renewal is calculated from.
-    if (editJoinDate) payload.joinDate = joinDate;
+    if (editJoinDate) {
+      payload.joinDate = joinDate;
+      payload.reconcileExpiry = joinChanged;
+      payload.joinDateReason = joinChanged ? joinDateReason.trim() : undefined;
+    }
     onSubmit?.(payload);
   }
 
@@ -213,9 +239,41 @@ export default function MemberForm({
             {joinDate
               ? ` (the ${ordinalDay(joinDate)} of each month)`
               : ""}
-            . Every future renewal is anchored to this date, whatever day
-            payment is made.
+            .
           </p>
+          {joinChanged && anchorRebase && (
+            <div className="mt-2 rounded-md bg-warning-soft px-3 py-2 text-xs text-warning-deep">
+              Saving will atomically move the current expiry from{" "}
+              {formatDisplayDate(initialData.planEndDate)} to{" "}
+              {formatDisplayDate(anchorRebase.expiry)} while preserving the{" "}
+              {anchorRebase.paidMonths} paid billing cycle
+              {anchorRebase.paidMonths === 1 ? "" : "s"}.
+            </div>
+          )}
+          {joinChanged && !anchorRebase && (
+            <div className="mt-2 rounded-md bg-error-soft px-3 py-2 text-xs text-error-deep">
+              This expiry is already off its current anchor. Automatic rebasing
+              is blocked; reconcile this member manually.
+            </div>
+          )}
+          {joinChanged && (
+            <div className="mt-3">
+              <label htmlFor="joinDateReason" className="mb-1 block text-xs font-medium text-ink">
+                Reason for anchor correction
+              </label>
+              <textarea
+                id="joinDateReason"
+                rows={2}
+                maxLength={300}
+                value={joinDateReason}
+                onChange={(e) => setJoinDateReason(e.target.value)}
+                className={cn(inputCls(errors.joinDateReason), "h-auto py-2")}
+              />
+              {errors.joinDateReason && (
+                <p className="mt-1 text-xs text-error">{errors.joinDateReason}</p>
+              )}
+            </div>
+          )}
         </Field>
       )}
 
@@ -227,13 +285,10 @@ export default function MemberForm({
                 <button
                   key={p.days}
                   type="button"
-                  onClick={() => {
-                    setPlanDurationDays(p.days);
-                    setCustomDuration("");
-                  }}
+                  onClick={() => setPlanDurationDays(p.days)}
                   className={cn(
                     "h-9 rounded-pill px-4 text-sm font-medium transition",
-                    !customDuration && planDurationDays === p.days
+                    planDurationDays === p.days
                       ? "btn-gradient"
                       : "border border-hairline bg-canvas text-ink hover:bg-canvas-soft-2"
                   )}
@@ -242,14 +297,6 @@ export default function MemberForm({
                 </button>
               ))}
             </div>
-            <input
-              type="number"
-              min="1"
-              value={customDuration}
-              onChange={(e) => setCustomDuration(e.target.value)}
-              placeholder="Custom days"
-              className={cn(inputCls(), "mt-2")}
-            />
           </Field>
 
           <Field label="Plan start date">

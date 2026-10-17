@@ -30,6 +30,8 @@ export default function EditMemberPage({ params }) {
           phone: formData.phone,
           customMemberId: formData.customMemberId,
           joinDate: formData.joinDate,
+          reconcileExpiry: formData.reconcileExpiry,
+          joinDateReason: formData.joinDateReason,
           address: formData.address,
           notes: formData.notes,
         }),
@@ -71,9 +73,9 @@ export default function EditMemberPage({ params }) {
               editJoinDate
             />
             <p className="mt-3 text-center text-xs text-mute">
-              Changing the joining date sets the fixed monthly renewal day for
-              all future renewals. To change the plan duration or current
-              expiry, use Renew on the member page.
+              Changing the joining date also realigns the current expiry while
+              preserving the member&apos;s paid billing-cycle count. Off-anchor
+              records require manual reconciliation.
             </p>
           </>
         )}

@@ -4,11 +4,12 @@ import Member from "@/models/Member";
 import { ok, fail, requireAuth } from "@/lib/apiResponse";
 import { decorateMember, sortMembers } from "@/lib/memberUtils";
 import {
+  businessDateOnly,
   computeMemberStatus,
   computeInitialExpiry,
   computeJoinDateFromExpiry,
+  isSupportedPlanDuration,
   utcDateOnly,
-  startOfDay,
 } from "@/lib/dateUtils";
 import { digitsOnly, normalizeMemberId } from "@/lib/utils";
 import { computeNextMemberId } from "@/lib/memberId";
@@ -26,7 +27,7 @@ const CreateSchema = z
     planDurationDays: z.coerce
       .number()
       .int()
-      .positive("Plan duration must be positive"),
+      .refine(isSupportedPlanDuration, "Choose a supported plan duration"),
     // The joining date. Required for a new signup — never defaulted to today,
     // because a silently invented joining date corrupts the billing day.
     planStartDate: z.coerce.date().optional(),
@@ -67,7 +68,7 @@ export async function GET(request) {
       .select("-address -notes -__v")
       .lean();
     // Compute start-of-today once and share it across the whole batch.
-    const today = startOfDay(new Date());
+    const today = businessDateOnly();
     let decorated = raw.map((m) => decorateMember(m, today));
 
     if (["active", "expiring", "expired"].includes(statusFilter)) {

@@ -12,6 +12,7 @@
     "seed:reset": "node scripts/seed.mjs --reset",
     "fix-index": "node scripts/fix-phone-index.mjs",
     "audit:anchors": "node scripts/audit-anchors.mjs",
+    "audit:billing": "node scripts/audit-billing-integrity.mjs",
     "migrate:anchors": "node scripts/migrate-billing-anchor.mjs"
   },
   "dependencies": {

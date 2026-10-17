@@ -21,6 +21,7 @@ import {
   durationToMonths,
   getBillingMonthsPaid,
   nextBillingExpiry,
+  rebaseExpiryToJoinDate,
   utcDateOnly,
 } from "../lib/dateUtils.js";
 
@@ -489,6 +490,40 @@ test("every renewal result is itself on the billing day", () => {
       assert.ok(next > start, `renewing ${s(start)} by ${days}d must add time`);
     }
   }
+});
+
+test("joining-date correction preserves paid cycles and rebases expiry atomically", () => {
+  const rebased = rebaseExpiryToJoinDate(
+    d("2026-07-13"),
+    d("2026-11-13"),
+    d("2026-09-05")
+  );
+  assert.ok(rebased);
+  assert.equal(rebased.paidMonths, 4);
+  assert.equal(s(rebased.expiry), "05-Jan-2027");
+});
+
+test("joining-date correction refuses an already off-anchor expiry", () => {
+  assert.equal(
+    rebaseExpiryToJoinDate(
+      d("2026-09-05"),
+      d("2026-11-13"),
+      d("2026-09-06")
+    ),
+    null
+  );
+});
+
+test("member edit requires explicit reconciliation and writes joinDate with expiry", () => {
+  const route = readFileSync(pathJoin(ROOT, "app/api/members/[id]/route.js"), "utf8");
+  assert.match(route, /reconcileExpiry/);
+  assert.match(route, /EXPIRY_RECONCILIATION_REQUIRED/);
+  assert.match(route, /rebaseExpiryToJoinDate/);
+  assert.match(route, /update\.planEndDate = rebased\.expiry/);
+  assert.match(route, /memberGuard\.joinDate = existingMember\.joinDate/);
+  assert.match(route, /memberGuard\.planEndDate = existingMember\.planEndDate/);
+  assert.match(route, /MEMBER_STATE_DRIFTED/);
+  assert.match(route, /MANUAL_RECONCILIATION_REQUIRED/);
 });
 
 test("no stored billingMonths field was introduced", () => {
