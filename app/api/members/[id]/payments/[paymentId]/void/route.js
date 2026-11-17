@@ -16,7 +16,7 @@ import {
 export const dynamic = "force-dynamic";
 
 const VoidSchema = z.object({
-  reason: z.string().trim().min(1, "A void reason is required").max(300),
+  reason: z.string().trim().max(300).optional().default(""),
   voidOnly: z.boolean().optional(),
 });
 

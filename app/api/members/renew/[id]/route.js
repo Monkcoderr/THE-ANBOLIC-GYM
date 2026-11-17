@@ -158,7 +158,11 @@ export async function POST(request, { params }) {
           (await Admin.findOne().session(dbSession).lean())?.gymName ||
           "Gym";
         const receiptText = generateReceiptText(
-          { name: member.name, phone: member.phone },
+          {
+            name: member.name,
+            phone: member.phone,
+            customMemberId: member.customMemberId,
+          },
           { amount, paymentMethod, paymentDate, newExpiry },
           gymName
         );

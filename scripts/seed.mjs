@@ -116,9 +116,12 @@ function fmt(date) {
 }
 
 function receipt(member, payment) {
+  const memberId = member.customMemberId
+    ? `🆔 *Member ID:* #${member.customMemberId}\n`
+    : "";
   return `🏋️‍♂️ *${GYM_NAME} - PAYMENT RECEIPT* 🏋️‍♂️
 ----------------------------------
-👤 *Member Name:* ${member.name}
+${memberId}👤 *Member Name:* ${member.name}
 📱 *Phone:* ${member.phone}
 📅 *Date:* ${fmt(payment.paymentDate)}
 💰 *Amount Paid:* ₹${payment.amount}

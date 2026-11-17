@@ -42,7 +42,6 @@ export default function VoidBillSheet({
   onClose,
   onVoided,
 }) {
-  const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -53,16 +52,11 @@ export default function VoidBillSheet({
 
   function close() {
     if (submitting) return;
-    setReason("");
     setError("");
     onClose?.();
   }
 
   async function submit() {
-    if (!reason.trim()) {
-      setError("Enter a reason for voiding this bill.");
-      return;
-    }
     setSubmitting(true);
     setError("");
     try {
@@ -71,7 +65,7 @@ export default function VoidBillSheet({
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ reason: reason.trim() }),
+          body: JSON.stringify({}),
         }
       );
       const json = await res.json().catch(() => ({}));
@@ -81,7 +75,6 @@ export default function VoidBillSheet({
         return;
       }
       setSubmitting(false);
-      setReason("");
       onVoided?.(json.data);
     } catch {
       setError("Network error. Nothing was changed. Please try again.");
@@ -164,27 +157,6 @@ export default function VoidBillSheet({
             </div>
           </div>
         )}
-
-        <div>
-          <label
-            htmlFor="voidReason"
-            className="mb-1.5 block text-sm font-medium text-ink"
-          >
-            Reason
-          </label>
-          <textarea
-            id="voidReason"
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            rows={2}
-            maxLength={300}
-            placeholder="Wrong amount, wrong plan, wrong date…"
-            className="w-full rounded-sm border border-hairline bg-canvas px-3 py-2.5 text-[15px] text-ink outline-none placeholder:text-mute focus:border-primary"
-          />
-          <p className="mt-1.5 text-xs text-mute">
-            Kept with the voided bill for your records.
-          </p>
-        </div>
 
         {error && (
           <p className="text-sm text-error" role="alert">
